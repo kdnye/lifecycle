@@ -69,7 +69,16 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
         )
         new_user.set_password(generate_secure_temp_password())
         db.session.add(new_user)
-        tasks_triggered.append("FSI Shared Identity: User Provisioned")
+        try:
+            db.session.commit()
+            tasks_triggered.append("FSI Shared Identity: User Provisioned")
+        except Exception:
+            db.session.rollback()
+            return {
+                "status": "error",
+                "message": "Database sync failed while provisioning shared identity.",
+                "intake_id": intake_id,
+            }
 
     email_sent = send_templated_email(
         to_email="support@stellar.tech",
@@ -80,11 +89,29 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
             "role": intake_request.role_profile,
         },
     )
-    if email_sent:
-        tasks_triggered.append("Stellar Support: Account Creation")
+    if not email_sent:
+        return {
+            "status": "error",
+            "message": "Failed to notify Stellar Support via Postmark.",
+            "intake_id": intake_id,
+            "generated_email": generated_email,
+            "tasks_generated": tasks_triggered,
+        }
+
+    tasks_triggered.append("Stellar Support: Account Creation")
 
     intake_request.status = "processed"
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return {
+            "status": "error",
+            "message": "Onboarding email sent, but intake status update failed.",
+            "intake_id": intake_id,
+            "generated_email": generated_email,
+            "tasks_generated": tasks_triggered,
+        }
 
     return {
         "status": "processed",
