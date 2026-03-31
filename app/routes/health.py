@@ -6,6 +6,7 @@ from app.models import (
     INTAKE_REQUEST_TABLE,
     QUESTION_MATRIX_TABLE,
     ROLE_MATRIX_TABLE,
+    USERS_TABLE,
     db,
 )
 
@@ -24,6 +25,7 @@ def readyz():
         QUESTION_MATRIX_TABLE,
         ACTION_MATRIX_TABLE,
         INTAKE_REQUEST_TABLE,
+        USERS_TABLE,
     ]
 
     missing_tables: list[str] = []
