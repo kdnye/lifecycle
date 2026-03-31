@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="fsi-container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('help.index') }}">Help Center</a></li>
+            <li class="breadcrumb-item active" aria-current="page">How to Use</li>
+        </ol>
+    </nav>
+
+    <h1 class="fsi-display">How to Process a Lifecycle Event</h1>
+    <hr>
+
+    <h3>1. Select the Event Type</h3>
+    <p>Navigate to the main Intake Form. Begin by selecting whether this is an <strong>Onboarding</strong> (New Hire), <strong>Offboarding</strong> (Termination/Exit), or a <strong>Change/Transfer</strong> event. This selection determines the baseline logic the Rules Engine will apply.</p>
+
+    <h3>2. Define Identity &amp; Role</h3>
+    <p>Provide the individual's legal names. Crucially, select the correct <strong>Role Profile</strong> (e.g., Driver, Office/Ops, Manager). The form will dynamically adapt based on this selection. For instance, selecting "Driver" will hide irrelevant questions about docking stations and internal VPNs.</p>
+
+    <h3>3. Review the Dynamic Output</h3>
+    <p>As you fill out the intake form, the system will actively preview the tasks it is preparing to generate. Verify that the expected hardware and access requirements match the role.</p>
+
+    <h3>4. Submit &amp; Auto-Provision</h3>
+    <p>Upon submission, the system executes the following automatically:</p>
+    <ul>
+        <li>Creates a master tracking record in the FSI Database.</li>
+        <li>Generates standard FSI database identity credentials.</li>
+        <li>Fires specialized, template-driven HTML emails via Postmark directly to our MSP ticketing systems.</li>
+    </ul>
+
+    <div class="alert alert-info mt-4">
+        <strong>Note on Offboarding:</strong> When offboarding, selecting "Immediate" priority will flag the resulting Stellar ticket as critical, prompting immediate Active Directory disablement and Microsoft 365 session revocation.
+    </div>
+</div>
+{% endblock %}

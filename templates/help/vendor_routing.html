@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="fsi-container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('help.index') }}">Help Center</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Vendor Routing</li>
+        </ol>
+    </nav>
+
+    <h1 class="fsi-display">Automated Vendor Routing (Action Matrix)</h1>
+    <p>Instead of manually drafting emails to multiple service providers, the Lifecycle app maps specific intake conditions to targeted Postmark templates.</p>
+    <hr>
+
+    <h3>Stellar Support (support@stellar.tech)</h3>
+    <p>The system routes to Stellar Support strictly for logical access control:</p>
+    <ul>
+        <li><strong>Onboarding:</strong> Microsoft 365 account creation, license assignment, and distribution list additions.</li>
+        <li><strong>Offboarding:</strong> Account disablement, forcing sign-out of all active sessions, license recovery, and converting to shared mailboxes.</li>
+    </ul>
+
+    <h3>Stellar Sales (sales@stellar.tech)</h3>
+    <p>The system routes to Stellar Sales exclusively for physical hardware procurement:</p>
+    <ul>
+        <li>Triggered only if the Role Matrix dictates physical hardware (Laptops, Docks, Monitors) is required.</li>
+        <li>Provides shipping destination and necessary model specifications based on department.</li>
+    </ul>
+
+    <h3>BlackPoint (Telecom)</h3>
+    <p>The system routes to BlackPoint for voice systems:</p>
+    <ul>
+        <li>Requests for new DIDs (Direct Inward Dialing) numbers.</li>
+        <li>Internal extension assignments.</li>
+        <li>Hardware phone provisioning.</li>
+    </ul>
+
+    <div class="alert alert-warning mt-4">
+        <strong>Technical Note:</strong> All emails are dispatched via the Postmark REST API. If a ticket is not generated, verify the <code>POSTMARK_SERVER_TOKEN</code> is active in the Google Cloud Run secrets manager.
+    </div>
+</div>
+{% endblock %}
