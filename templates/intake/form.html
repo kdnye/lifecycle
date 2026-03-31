@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Employee Lifecycle Intake{% endblock %}
+
+{% block content %}
+  <h1 class="fsi-display">Employee Lifecycle Intake</h1>
+  <div class="card">
+    <p>Starter outline: collect intake data, map through Role + Question + Action matrices, and preview MSP actions.</p>
+    <form id="intake-form">
+      <label for="employee_name">Employee name</label>
+      <input id="employee_name" name="employee_name" required />
+
+      <label for="role_profile">Role profile</label>
+      <select id="role_profile" name="role_profile">
+        <option value="driver">Driver</option>
+        <option value="office" selected>Office/Ops</option>
+        <option value="manager">Manager</option>
+        <option value="warehouse">Warehouse</option>
+        <option value="contractor">Contractor</option>
+      </select>
+
+      <label for="event_type">Lifecycle event</label>
+      <select id="event_type" name="event_type">
+        <option value="onboarding" selected>Onboarding</option>
+        <option value="offboarding">Offboarding</option>
+      </select>
+
+      <button type="submit">Preview action plan</button>
+    </form>
+
+    <pre id="result"></pre>
+  </div>
+
+  <script>
+    const form = document.getElementById('intake-form');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = Object.fromEntries(new FormData(form).entries());
+
+      const response = await fetch('/preview-actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      result.textContent = JSON.stringify(await response.json(), null, 2);
+    });
+  </script>
+{% endblock %}
