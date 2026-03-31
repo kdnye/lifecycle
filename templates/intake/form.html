@@ -27,24 +27,74 @@
       <button type="submit">Preview action plan</button>
     </form>
 
+    <h2 class="fsi-display">Expected Vendor Tasks</h2>
+    <p id="tasks-status" aria-live="polite"></p>
+    <ul id="tasks-list"></ul>
+
     <pre id="result"></pre>
   </div>
 
   <script>
     const form = document.getElementById('intake-form');
+    const roleProfile = document.getElementById('role_profile');
+    const eventType = document.getElementById('event_type');
+    const tasksStatus = document.getElementById('tasks-status');
+    const tasksList = document.getElementById('tasks-list');
     const result = document.getElementById('result');
+
+    const getPayload = () => Object.fromEntries(new FormData(form).entries());
+
+    const renderTaskPreview = (actions) => {
+      tasksList.innerHTML = '';
+      if (!Array.isArray(actions) || actions.length === 0) {
+        tasksStatus.textContent = 'No vendor tasks are expected for this selection.';
+        return;
+      }
+
+      tasksStatus.textContent = `${actions.length} expected vendor task${actions.length === 1 ? '' : 's'}:`;
+      actions.forEach((item) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${item.vendor}: ${item.action}`;
+        tasksList.appendChild(listItem);
+      });
+    };
+
+    const fetchAndRenderPreview = async () => {
+      tasksStatus.textContent = 'Loading expected vendor tasks...';
+
+      try {
+        const response = await fetch('/preview-actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getPayload()),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderTaskPreview(data.actions);
+      } catch (error) {
+        tasksList.innerHTML = '';
+        tasksStatus.textContent = 'Unable to load expected vendor tasks right now. Please try again.';
+      }
+    };
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const payload = Object.fromEntries(new FormData(form).entries());
-
       const response = await fetch('/preview-actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(getPayload()),
       });
 
       result.textContent = JSON.stringify(await response.json(), null, 2);
+      fetchAndRenderPreview();
     });
+
+    roleProfile.addEventListener('change', fetchAndRenderPreview);
+    eventType.addEventListener('change', fetchAndRenderPreview);
+    fetchAndRenderPreview();
   </script>
 {% endblock %}
