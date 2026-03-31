@@ -72,4 +72,8 @@ class IntakeRequest(db.Model):
     role_profile = db.Column(db.String(64), nullable=False)
     event_type = db.Column(db.String(32), nullable=False)  # onboarding | offboarding
     manager_email = db.Column(db.String(255), nullable=True)
+    driver_needs_laptop = db.Column(db.Boolean, nullable=False, default=False)
+    driver_needs_printer = db.Column(db.Boolean, nullable=False, default=False)
+    driver_needs_fuel_card = db.Column(db.Boolean, nullable=False, default=False)
+    driver_needs_vehicle = db.Column(db.Boolean, nullable=False, default=False)
     status = db.Column(db.String(32), nullable=False, default="draft")
