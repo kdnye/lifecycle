@@ -6,8 +6,11 @@
   <div class="card">
     <p>Starter outline: collect intake data, map through Role + Question + Action matrices, and preview MSP actions.</p>
     <form id="intake-form">
-      <label for="employee_name">Employee name</label>
-      <input id="employee_name" name="employee_name" required />
+      <label for="first_name">Legal First Name</label>
+      <input id="first_name" name="first_name" required />
+
+      <label for="last_name">Legal Last Name</label>
+      <input id="last_name" name="last_name" required />
 
       <label for="role_profile">Role profile</label>
       <select id="role_profile" name="role_profile">
@@ -24,7 +27,7 @@
         <option value="offboarding">Offboarding</option>
       </select>
 
-      <button type="submit">Preview action plan</button>
+      <button type="submit" id="submit-btn">Process Lifecycle Event</button>
     </form>
 
     <h2 class="fsi-display">Expected Vendor Tasks</h2>
@@ -41,6 +44,7 @@
     const tasksStatus = document.getElementById('tasks-status');
     const tasksList = document.getElementById('tasks-list');
     const result = document.getElementById('result');
+    const submitBtn = document.getElementById('submit-btn');
 
     const getPayload = () => Object.fromEntries(new FormData(form).entries());
 
@@ -61,12 +65,14 @@
 
     const fetchAndRenderPreview = async () => {
       tasksStatus.textContent = 'Loading expected vendor tasks...';
+      const payload = getPayload();
+      payload.employee_name = `${payload.first_name || ''} ${payload.last_name || ''}`.trim();
 
       try {
         const response = await fetch('/preview-actions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(getPayload()),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -83,16 +89,27 @@
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const response = await fetch('/preview-actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(getPayload()),
-      });
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Processing...';
 
-      result.textContent = JSON.stringify(await response.json(), null, 2);
-      fetchAndRenderPreview();
+      try {
+        const response = await fetch('/process-onboarding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getPayload()),
+        });
+
+        result.textContent = JSON.stringify(await response.json(), null, 2);
+      } catch (error) {
+        result.textContent = JSON.stringify({ status: 'error', message: 'Unable to process lifecycle event.' }, null, 2);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Process Lifecycle Event';
+      }
     });
 
+    document.getElementById('first_name').addEventListener('input', fetchAndRenderPreview);
+    document.getElementById('last_name').addEventListener('input', fetchAndRenderPreview);
     roleProfile.addEventListener('change', fetchAndRenderPreview);
     eventType.addEventListener('change', fetchAndRenderPreview);
     fetchAndRenderPreview();
