@@ -5,6 +5,8 @@ import string
 from dataclasses import dataclass
 import os
 
+from flask import current_app
+
 from app.models import IntakeRequest, User, db
 from services.email import send_templated_email
 
@@ -41,6 +43,18 @@ def _build_generated_email(first_name: str, last_name: str) -> str:
     return f"{sanitized_first}.{sanitized_last}@freightservices.net"
 
 
+def _build_cc_targets(manager_email: str | None) -> tuple[str, str]:
+    hr_cc_raw = current_app.config.get("HR_CC_EMAILS", "")
+    hr_cc_list = [email.strip() for email in hr_cc_raw.split(",") if email.strip()]
+    cc_targets = list(hr_cc_list)
+
+    if manager_email and manager_email not in cc_targets:
+        cc_targets.append(manager_email)
+
+    primary_to_email = hr_cc_list[0] if hr_cc_list else (manager_email or "")
+    return ", ".join(cc_targets), primary_to_email
+
+
 def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | int]:
     """Execute onboarding workflows and sync identity into the shared FSI users table."""
     intake_request = db.session.get(IntakeRequest, intake_id)
@@ -58,6 +72,7 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
     tasks_triggered: list[str] = []
     manager_email = (intake_request.manager_email or "").strip() or None
     ops_email = os.getenv("FSI_OPS_EMAIL", "ops@freightservices.net")
+    cc_email, primary_hr_email = _build_cc_targets(manager_email)
 
     existing_user = User.query.filter_by(email=generated_email).first()
     if not existing_user:
@@ -83,9 +98,11 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
                 "intake_id": intake_id,
             }
 
-    if manager_email:
+    manager_notification_to = manager_email or primary_hr_email
+    if manager_notification_to:
         manager_notified = send_templated_email(
-            to_email=manager_email,
+            to_email=manager_notification_to,
+            cc_email=cc_email or None,
             template_alias="manager-onboarding-notification",
             template_model={
                 "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
@@ -94,7 +111,7 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
             },
         )
         if manager_notified:
-            tasks_triggered.append(f"Manager Notified: {manager_email}")
+            tasks_triggered.append(f"Internal Welcome Notified: {manager_notification_to}")
 
     if intake_request.role_profile == "driver":
         assets_needed: list[str] = []
@@ -110,6 +127,7 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
         if assets_needed:
             ops_notified = send_templated_email(
                 to_email=ops_email,
+                cc_email=cc_email or None,
                 template_alias="internal-fleet-provisioning",
                 template_model={
                     "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
@@ -125,7 +143,7 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
 
     email_sent = send_templated_email(
         to_email="support@stellar.tech",
-        cc_email=manager_email,
+        cc_email=cc_email or None,
         template_alias="new-user-account",
         template_model={
             "employee_name": f"{intake_request.first_name} {intake_request.last_name}",

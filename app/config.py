@@ -11,6 +11,7 @@ class Settings:
     postmark_server_token: str | None
     default_sender_email: str
     mail_message_stream: str
+    hr_cc_emails: str
 
 
 def load_settings() -> Settings:
@@ -22,6 +23,10 @@ def load_settings() -> Settings:
         postmark_server_token=os.getenv("POSTMARK_SERVER_TOKEN"),
         default_sender_email=os.getenv("DEFAULT_SENDER_EMAIL", "it-automation@freightservices.net"),
         mail_message_stream=os.getenv("MAIL_MESSAGE_STREAM", "outbound"),
+        hr_cc_emails=os.getenv(
+            "HR_CC_EMAILS",
+            "hr@freightservices.net, suzann.ghekas@freightservices.net",
+        ),
     )
 
 
