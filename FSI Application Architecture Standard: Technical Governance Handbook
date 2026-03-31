@@ -66,6 +66,16 @@ migrations/20260304_add_load_board_mawb_number.sql	alembic/versions/20260304_02_
 
 Schema rollouts must be integrated into the cloudbuild.yaml pipeline as a blocking stage prior to service deployment.
 
+## Cross-Application Schema Governance (Shared Identity)
+To maintain a single source of truth for employee identity, FSI may run multiple micro-applications against a shared PostgreSQL instance where identity tables are common across services.
+
+* **Schema Ownership:** Shared tables must have a designated schema owner repository (current identity owner: EXPENSES).
+* **Secondary Application Rules:**
+  * Secondary apps may define SQLAlchemy mappings for shared tables to support approved `SELECT` and `INSERT` workflows.
+  * Secondary apps must not apply structural schema changes (`ALTER TABLE`, `DROP COLUMN`, `DROP TABLE`) to shared tables through local migrations.
+  * Structural updates to shared identity tables must originate from the schema owner repository and be consumed downstream.
+
+
 
 --------------------------------------------------------------------------------
 

@@ -136,3 +136,17 @@ Phase	Focus	Deliverables
 3: Optimization	Full Integration	Guided wizard UI, Microsoft SSO/User Sync, and direct API hooks to MSP PSA tools.
 
 Through this implementation, FSI transforms a scattered manual process into a single, auditable source of truth for the FSI digital ecosystem, ensuring the integrity of every identity and asset throughout the employee lifecycle.
+
+## Current Capabilities (Phase 1 & 2 Active)
+* **Dynamic Intake UI:** The intake form supports asynchronous previewing through `POST /preview-actions`, dynamically returning action recommendations for the selected `role_profile` and `event_type`.
+* **Rules Engine Matrix:** The application persists and references `RoleMatrix`, `QuestionMatrix`, and `ActionMatrix` models in PostgreSQL to support entitlement and routing decisions.
+* **Shared Identity Auto-Provisioning:** On onboarding requests, the workflow writes identity records to the shared `users` table using the mapped `User` model and creates secure temporary credentials before outbound ticket notification.
+* **Automated MSP Ticketing (Postmark):** Onboarding execution sends templated transactional messages through the Postmark API for Stellar Support workflows.
+* **Integrated Help Center:** Built-in help templates document role entitlements, vendor routing, and intake usage.
+
+## Forward-Looking Roadmap (Phase 3)
+* **Offboarding Execution:** `/process-onboarding` currently marks offboarding requests as pending with a placeholder response; immediate revocation and disablement flows remain planned.
+* **Direct ITSM API Hooks:** Current MSP communication is Postmark-first; direct PSA API integrations (e.g., ConnectWise/HaloITSM) are future work.
+* **Manager Approval Workflows:** Stateful approval gates before outbound task dispatch are planned but not yet active.
+* **Microsoft Entra ID (SSO) Sync:** Automated sync and identity lifecycle integration with Entra ID remains a roadmap item.
+

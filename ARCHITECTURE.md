@@ -131,3 +131,12 @@ Phase 2: Automation	Task Orchestration	Automatic task generation, status dashboa
 Phase 3: Optimization	Full Integration	Guided wizard UI, Microsoft SSO/User Sync, and direct API hooks to MSP PSA tools.
 
 This architecture eliminates the "scattered" nature of current MSP requests by consolidating all identity, hardware, and access workflows into a single, auditable source of truth.
+
+## Shared Identity Database Integration
+The Lifecycle application uses a **Shared Database Pattern** for identity provisioning. Instead of owning a separate identity schema, it maps and writes to the shared `users` table used across FSI applications.
+
+**Technical Governance for this Pattern**
+1. **Model Mapping:** `app/models.py` defines `USERS_TABLE = "users"` and maps identity fields through the `User` model used by onboarding workflows.
+2. **Migration Restrictions:** Alembic revisions generated in Lifecycle must be manually reviewed and sanitized so shared-table ownership is respected. Do not ship `drop_column`, `drop_table`, or destructive alterations against `users` from this repository.
+3. **Transaction Safety:** Onboarding processing commits shared-identity provisioning to PostgreSQL before dispatching Postmark notifications, preventing ticket creation when database constraints fail.
+
