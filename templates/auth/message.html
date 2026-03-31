@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Lifecycle Request Status{% endblock %}
+
+{% block content %}
+  <h1 class="fsi-display">Lifecycle Request Status</h1>
+  <div class="card">
+    <p>{{ message }}</p>
+
+    {% if tasks %}
+      <h2 class="fsi-display">Executed Tasks</h2>
+      <ul>
+        {% for task in tasks %}
+          <li>{{ task }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+{% endblock %}

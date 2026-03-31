@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
@@ -77,3 +78,7 @@ class IntakeRequest(db.Model):
     driver_needs_fuel_card = db.Column(db.Boolean, nullable=False, default=False)
     driver_needs_vehicle = db.Column(db.Boolean, nullable=False, default=False)
     status = db.Column(db.String(32), nullable=False, default="draft")
+    approval_token = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    termination_date = db.Column(db.Date, nullable=True)
+    is_immediate = db.Column(db.Boolean, nullable=False, default=False)
+    forwarding_email = db.Column(db.String(255), nullable=True)
