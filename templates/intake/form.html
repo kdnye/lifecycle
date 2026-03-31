@@ -57,7 +57,28 @@
         </div>
       </div>
 
-      <button type="submit" id="submit-btn">Process Lifecycle Event</button>
+      <div id="offboarding-section" style="display: none;" class="card mt-3 mb-3 p-3 bg-light">
+        <h3 class="h6">Offboarding Details</h3>
+        <p class="small text-muted">Provide deprovisioning timing and mailbox forwarding requirements.</p>
+
+        <label for="termination_date">Termination Date</label>
+        <input type="date" id="termination_date" name="termination_date" />
+
+        <div class="form-check mt-2 mb-2">
+          <input class="form-check-input" type="checkbox" id="is_immediate" name="is_immediate" value="true" />
+          <label class="form-check-label" for="is_immediate">Immediate Offboarding (critical disablement)</label>
+        </div>
+
+        <label for="forwarding_email">Forwarding Email (Optional)</label>
+        <input
+          type="email"
+          id="forwarding_email"
+          name="forwarding_email"
+          placeholder="forwarding@freightservices.net"
+        />
+      </div>
+
+      <button type="submit" id="submit-btn">Submit For Approval</button>
     </form>
 
     <h2 class="fsi-display">Expected Vendor Tasks</h2>
@@ -72,6 +93,10 @@
     const roleProfile = document.getElementById('role_profile');
     const driverAssetsSection = document.getElementById('driver-assets-section');
     const eventType = document.getElementById('event_type');
+    const offboardingSection = document.getElementById('offboarding-section');
+    const terminationDate = document.getElementById('termination_date');
+    const immediateToggle = document.getElementById('is_immediate');
+    const forwardingEmail = document.getElementById('forwarding_email');
     const tasksStatus = document.getElementById('tasks-status');
     const tasksList = document.getElementById('tasks-list');
     const result = document.getElementById('result');
@@ -89,6 +114,17 @@
       driverAssetsSection.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
         checkbox.checked = false;
       });
+    };
+
+    const toggleOffboardingFields = () => {
+      const isOffboarding = eventType.value === 'offboarding';
+      offboardingSection.style.display = isOffboarding ? 'block' : 'none';
+
+      if (!isOffboarding) {
+        terminationDate.value = '';
+        immediateToggle.checked = false;
+        forwardingEmail.value = '';
+      }
     };
 
     const renderTaskPreview = (actions) => {
@@ -136,7 +172,7 @@
       submitBtn.textContent = 'Processing...';
 
       try {
-        const response = await fetch('/process-onboarding', {
+        const response = await fetch('/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(getPayload()),
@@ -147,7 +183,7 @@
         result.textContent = JSON.stringify({ status: 'error', message: 'Unable to process lifecycle event.' }, null, 2);
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Process Lifecycle Event';
+        submitBtn.textContent = 'Submit For Approval';
       }
     });
 
@@ -157,11 +193,15 @@
       toggleDriverAssets();
       fetchAndRenderPreview();
     });
-    eventType.addEventListener('change', fetchAndRenderPreview);
+    eventType.addEventListener('change', () => {
+      toggleOffboardingFields();
+      fetchAndRenderPreview();
+    });
     driverAssetsSection.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
       checkbox.addEventListener('change', fetchAndRenderPreview);
     });
     toggleDriverAssets();
+    toggleOffboardingFields();
     fetchAndRenderPreview();
   </script>
 {% endblock %}
