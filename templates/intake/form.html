@@ -35,6 +35,28 @@
         <option value="offboarding">Offboarding</option>
       </select>
 
+      <div id="driver-assets-section" style="display: none;" class="card mt-3 mb-3 p-3 bg-light">
+        <h3 class="h6">Internal Driver Equipment Tracking</h3>
+        <p class="small text-muted">Select the physical assets this driver requires. This will notify FSI Operations.</p>
+
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="driver_needs_laptop" name="driver_needs_laptop" value="true" />
+          <label class="form-check-label" for="driver_needs_laptop">Company Laptop</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="driver_needs_printer" name="driver_needs_printer" value="true" />
+          <label class="form-check-label" for="driver_needs_printer">Mobile Printer</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="driver_needs_fuel_card" name="driver_needs_fuel_card" value="true" />
+          <label class="form-check-label" for="driver_needs_fuel_card">Fuel Card</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="driver_needs_vehicle" name="driver_needs_vehicle" value="true" />
+          <label class="form-check-label" for="driver_needs_vehicle">Box Truck Assignment</label>
+        </div>
+      </div>
+
       <button type="submit" id="submit-btn">Process Lifecycle Event</button>
     </form>
 
@@ -48,6 +70,7 @@
   <script>
     const form = document.getElementById('intake-form');
     const roleProfile = document.getElementById('role_profile');
+    const driverAssetsSection = document.getElementById('driver-assets-section');
     const eventType = document.getElementById('event_type');
     const tasksStatus = document.getElementById('tasks-status');
     const tasksList = document.getElementById('tasks-list');
@@ -55,6 +78,18 @@
     const submitBtn = document.getElementById('submit-btn');
 
     const getPayload = () => Object.fromEntries(new FormData(form).entries());
+
+    const toggleDriverAssets = () => {
+      if (roleProfile.value === 'driver') {
+        driverAssetsSection.style.display = 'block';
+        return;
+      }
+
+      driverAssetsSection.style.display = 'none';
+      driverAssetsSection.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+    };
 
     const renderTaskPreview = (actions) => {
       tasksList.innerHTML = '';
@@ -118,8 +153,15 @@
 
     document.getElementById('first_name').addEventListener('input', fetchAndRenderPreview);
     document.getElementById('last_name').addEventListener('input', fetchAndRenderPreview);
-    roleProfile.addEventListener('change', fetchAndRenderPreview);
+    roleProfile.addEventListener('change', () => {
+      toggleDriverAssets();
+      fetchAndRenderPreview();
+    });
     eventType.addEventListener('change', fetchAndRenderPreview);
+    driverAssetsSection.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+      checkbox.addEventListener('change', fetchAndRenderPreview);
+    });
+    toggleDriverAssets();
     fetchAndRenderPreview();
   </script>
 {% endblock %}

@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 import string
 from dataclasses import dataclass
+import os
 
 from app.models import IntakeRequest, User, db
 from services.email import send_templated_email
@@ -56,6 +57,7 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     tasks_triggered: list[str] = []
     manager_email = (intake_request.manager_email or "").strip() or None
+    ops_email = os.getenv("FSI_OPS_EMAIL", "ops@freightservices.net")
 
     existing_user = User.query.filter_by(email=generated_email).first()
     if not existing_user:
@@ -93,6 +95,33 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
         )
         if manager_notified:
             tasks_triggered.append(f"Manager Notified: {manager_email}")
+
+    if intake_request.role_profile == "driver":
+        assets_needed: list[str] = []
+        if intake_request.driver_needs_laptop:
+            assets_needed.append("Laptop")
+        if intake_request.driver_needs_printer:
+            assets_needed.append("Mobile Printer")
+        if intake_request.driver_needs_fuel_card:
+            assets_needed.append("Fuel Card")
+        if intake_request.driver_needs_vehicle:
+            assets_needed.append("Box Truck Assignment")
+
+        if assets_needed:
+            ops_notified = send_templated_email(
+                to_email=ops_email,
+                template_alias="internal-fleet-provisioning",
+                template_model={
+                    "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
+                    "event_type": "Onboarding",
+                    "assets_list": ", ".join(assets_needed),
+                    "manager": manager_email or "Unassigned",
+                },
+            )
+            if ops_notified:
+                tasks_triggered.append(
+                    f"FSI Ops: Provision Internal Assets ({len(assets_needed)} items)"
+                )
 
     email_sent = send_templated_email(
         to_email="support@stellar.tech",

@@ -5,6 +5,12 @@ from services.workflow import IntakeContext, build_action_plan, process_onboardi
 
 intake_bp = Blueprint("intake", __name__)
 
+TRUTHY_CHECKBOX_VALUES = {"1", "true", "on", "yes"}
+
+
+def _to_bool(value: object) -> bool:
+    return str(value).strip().lower() in TRUTHY_CHECKBOX_VALUES
+
 
 @intake_bp.get("/")
 def intake_form():
@@ -37,6 +43,10 @@ def process_onboarding():
         role_profile=payload["role_profile"],
         event_type=payload["event_type"],
         manager_email=payload.get("manager_email", "").strip() or None,
+        driver_needs_laptop=_to_bool(payload.get("driver_needs_laptop")),
+        driver_needs_printer=_to_bool(payload.get("driver_needs_printer")),
+        driver_needs_fuel_card=_to_bool(payload.get("driver_needs_fuel_card")),
+        driver_needs_vehicle=_to_bool(payload.get("driver_needs_vehicle")),
         status="processing",
     )
     db.session.add(new_request)
