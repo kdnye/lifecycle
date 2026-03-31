@@ -1,0 +1,207 @@
+FSI Application Architecture Standard: Technical Governance Handbook
+
+1. Architectural Vision and Governance Framework
+
+The strategic importance of a unified architecture across the Freight Services Inc. (FSI) ecosystem is paramount for maintaining a high-velocity, resilient software portfolio. The FSI Technical Governance Standard mandates a stack unified on Flask, SQLAlchemy, and Google Cloud Run. This standardization is the primary mechanism for mitigating technical debt and ensuring operational scalability across all business units. By enforcing these common frameworks, FSI ensures that engineers can move between projects with zero friction, deployment cycles remain predictable, and the organization can scale its infrastructure horizontally without reinventing core logic.
+
+All engineering decisions must be rooted in three non-negotiable Architectural Pillars:
+
+* Clarity: Repositories must be self-documenting. Every architectural pattern—from table naming to service abstraction—must serve the goal of making the codebase instantly navigable for any FSI engineer.
+* Consistency: Patterns for data persistence, transactional messaging, and visual branding are standardized. There is a "single way" to build FSI software to prevent environment drift and fragmentation.
+* Secure-by-Default: Security is a runtime requirement, not an audit item. This is enforced through mandatory secret management, the elimination of local credential storage, and the adoption of client-side processing for sensitive document handling.
+
+Compliance with the technical requirements defined in this handbook is mandatory for all applications within the FSI ecosystem.
+
+
+--------------------------------------------------------------------------------
+
+
+2. Core Backend Standards: Flask and SQLAlchemy Integration
+
+The FSI standard mandates the use of Flask for web orchestration and SQLAlchemy for the persistence layer. This combination provides the necessary balance between developer speed and the data integrity required for global logistics workflows.
+
+Mandatory Project Structure
+
+All FSI repositories must strictly adhere to the following directory layout, as established in the fsi_STRUCTURE_EXAMPLE and EXPENSES standards:
+
+* /app: Houses core application logic, including blueprint registration and models.py.
+* /services: Mandated for all business logic and third-party integrations (e.g., mail, workflow engines). Business logic must never reside directly in route handlers.
+* /templates: Contains Jinja2 templates, logically organized by module (e.g., /templates/auth, /templates/expenses).
+* wsgi.py: The production entrypoint responsible for initializing the application for the WSGI server.
+
+The Model Constant Rule (Pillar: Clarity)
+
+To uphold the Clarity pillar and prevent naming collisions during complex joins or migrations, developers must register every database table name as a module-level constant in app/models.py.
+
+* Mandated Convention: <TABLE_NAME_UPPER>_TABLE = "table_name"
+* Architectural Requirement: This rule is essential for simplifying SQLAlchemy migration referencing. Specifically, it prevents corruption during percent-encoding of database URLs—ensuring characters like @ or ? in connection strings do not break the application—while providing a single source of truth for schema metadata.
+
+Correct implementation of these models is the prerequisite for effective database lifecycle management.
+
+
+--------------------------------------------------------------------------------
+
+
+3. Database Governance: The Alembic Migration Mandate
+
+FSI has deprecated the use of legacy SQL scripts in favor of controlled Alembic migrations. This ensures environment parity and prevents concurrent migration races across distributed Cloud Run containers.
+
+Mandatory Migration Workflow
+
+1. Forced Deprecation: Execution of files within migrations/*.sql is strictly forbidden. These are preserved solely as historical references.
+2. Canonical Rollout: alembic upgrade head (local) or flask db upgrade (CI/CD) is the only approved path for schema modification.
+3. The Actionable Readiness Step: Applications must utilize /readyz or /healthz endpoints to verify schema state before accepting traffic. If required schema elements are missing, the endpoint must return a 503 status and provide a response listing the specific missing columns or tables to guide operational recovery.
+
+Legacy-to-Alembic Mapping Inventory
+
+All historical changes must be documented and captured in versioned Python scripts. Architects must verify the following inventory in the FSI_POD repository:
+
+Legacy SQL File	Alembic Replacement Revision	Status
+migrations/20260303_add_is_ops_to_users.sql	alembic/versions/20260306_01_add_users_is_ops_flag.py	Deprecated; Use Alembic
+migrations/20260303_decouple_pod_records.sql	alembic/versions/20260306_02_decouple_pod_records.py	Deprecated; Use Alembic
+migrations/20260304_add_shipment_tables.sql	alembic/versions/20260306_03_add_shipment_tables.py	Deprecated; Use Alembic
+migrations/20260304_add_pod_record_location_and_leg_fields.sql	alembic/versions/20260306_04_add_pod_record_location_and_leg_fields.py	Deprecated; Use Alembic
+migrations/20260304_add_notification_settings_and_emails.sql	alembic/versions/20260306_05_add_notification_settings_and_emails.py	Deprecated; Use Alembic
+migrations/20260304_add_load_board_mawb_number.sql	alembic/versions/20260304_02_add_load_board_mawb_number.py	Deprecated; Use Alembic
+
+Schema rollouts must be integrated into the cloudbuild.yaml pipeline as a blocking stage prior to service deployment.
+
+
+--------------------------------------------------------------------------------
+
+
+4. Deployment Architecture: Google Cloud Run and Gunicorn
+
+FSI leverages Google Cloud Run for serverless execution. This provides the horizontal scaling required to handle logistics bursts while maintaining cost-efficiency through scale-to-zero capabilities.
+
+Production Entrypoint Standards
+
+The transition from development to production requires a shift in the execution model.
+
+* Production Command: gunicorn --bind 0.0.0.0:${PORT} wsgi:app
+* Critical Constraint: Engineers must not add the --factory flag to Gunicorn. The application factory is invoked via the wsgi:app syntax.
+
+Cloud Build Pipeline Requirements
+
+The cloudbuild.yaml pipeline must execute three distinct stages:
+
+1. Build/Push: Containerize the application and push to Google Artifact Registry.
+2. Migration Execution: Execute the database migration as a standalone job (flask db upgrade). This must succeed before the deployment continues.
+3. Service Deployment: Deploy to Cloud Run with automated secret mounting.
+
+Maintenance Mode & Fail-Fast Behavior
+
+Applications must implement a strict security "Fail-Fast" mechanism. If SECRET_KEY or DATABASE_URL are missing or malformed in a production environment, the application must enter Maintenance Mode. For security reasons, if SECRET_KEY is not explicitly set in production, the app must refuse to start rather than falling back to an ephemeral key.
+
+
+--------------------------------------------------------------------------------
+
+
+5. Environment Configuration and Secret Management
+
+The FSI "Secure-by-Default" pillar mandates the complete decoupling of secrets from source control.
+
+Required Runtime Environment Variables
+
+The following exact keys must be used in the Google Secret Manager to ensure pipeline compatibility:
+
+Variable	Required	Description	Source
+APP_ENV	Yes	Defines environment (production/staging).	Cloud Run Env Var
+FSI_PRODUCTION	Yes	Mandatory safety switch for validation.	Cloud Run Env Var
+SECRET_KEY	Yes	Used for session signing.	Secret Manager (fsi-secret-key)
+DATABASE_URL	Yes	SQLAlchemy connection string.	Secret Manager (fsi-database-url)
+
+Strict Runtime Validation
+
+When FSI_PRODUCTION is true, the application must perform a startup check on all critical variables. Any insecure configuration (e.g., missing secrets or default debug keys) must trigger an immediate application exit to prevent compromised runtimes.
+
+All FSI applications mandate Python 3.10+. Use of Python 3.8 is permitted only for legacy maintenance and requires a technical exception from the Governance Lead.
+
+
+--------------------------------------------------------------------------------
+
+
+6. Communication Standards: Postmark Centralized Messaging
+
+FSI mandates Postmark for all transactional email to ensure high deliverability and auditability for logistics workflows.
+
+The Postmark-Only Mandate
+
+1. Provider: MAIL_PROVIDER=postmark.
+2. Enforcement: MAIL_ENFORCE_POSTMARK=true.
+3. API Only: Use the Postmark API exclusively. SMTP is prohibited for new development.
+4. Auditability: Every business unit must define a unique MAIL_MESSAGE_STREAM (e.g., MAIL_MESSAGE_STREAM=expenses).
+5. Sender Identity: Standardize on MAIL_DEFAULT_SENDER=expense.reports@freightservices.net where applicable.
+
+Service Layer Pattern
+
+All email logic must reside in app/services/mail.py.
+
+* Template Governance: Email bodies must never be hardcoded in Python.
+* The Template Model Rule: Developers must use the template_model (Python dictionary) as the exclusive method for passing dynamic data to the Postmark API. Templates are managed within the Postmark UI to allow content updates without redeploying code.
+
+
+--------------------------------------------------------------------------------
+
+
+7. Frontend & Branding: Font-Loading and UI Consistency
+
+Unified visual identity is critical for building internal trust. The FSI UI baseline utilizes a performance-optimized font strategy.
+
+FSI Font-Loading Strategy
+
+* Roboto: Standard for body copy and UI controls.
+* Bebas Neue: Standard for display headings (.fsi-display).
+* Optimization: Templates must include preconnect hints for fonts.googleapis.com and fonts.gstatic.com in the base.html header.
+* Fallback Mandate: CSS must maintain the resilient stack: system-ui, sans-serif.
+
+Privacy Trigger
+
+Any application handling PII, sensitive logistics data, or governed by specific compliance regulations must transition from CDN-hosted to self-hosted fonts (stored in /static/fonts/) to prevent external infrastructure requests from client browsers.
+
+
+--------------------------------------------------------------------------------
+
+
+8. Domain-Specific Architectural Protocols
+
+Core standards are extended by unit-specific business logic across the FSI portfolio.
+
+Domain Rules Matrix
+
+Module	Storage & Logic	Thresholds & Throttling
+Expenses	Receipts stored at /receipts via GCS bucket mounts.	Mandatory supervisor review for all submissions.
+Quotes	Air piece limit: 300 lbs.	RATELIMIT_DEFAULT: 200 per day; 50 per hour.
+Quotes	Threshold warnings: 1200 lbs (Air); $6000 or 3000 lbs (Total).	Blocks Air quotes if per-piece weight > 300 lbs.
+Onboarding	Role-based provisioning for Driver, Office, Manager, Warehouse, and Contractor.	Automated MSP ticket generation via Postmark templates.
+PDFer	Client-side in-memory processing via pdf-lib.	Document data must never leave the browser runtime.
+
+
+--------------------------------------------------------------------------------
+
+
+9. Development Lifecycle and Quality Assurance
+
+Testing and Coverage Mandate
+
+FSI-aligned repositories must maintain high test coverage.
+
+* Command: pytest --cov=app --cov-report=term-missing
+* Requirement: Coverage reporting is a blocking requirement in all CI/CD pipelines.
+
+Local Development Standard
+
+1. Environment Parity: Mirror production using a local .env file derived from .env.example.
+2. Runtime: Python 3.10+ is the standard.
+3. Dependencies: Production builds must install only requirements.txt. Development tools are restricted to requirements-dev.txt.
+
+Pre-Commit Checklist
+
+Before any PR submission, engineers must verify:
+
+* [ ] Every new database table is registered as a constant in models.py.
+* [ ] Alembic migrations have been generated and validated locally.
+* [ ] The full test suite passes with required coverage thresholds.
+* [ ] Font-loading preconnect hints are present in base.html.
+* [ ] No secrets (Postmark tokens, DATABASE_URL) are committed to source control.
+* [ ] /readyz returns 503 with actionable guidance if schema is out of sync.
