@@ -1,142 +1,165 @@
-Briefing Document: Onboarding and Offboarding Rules Engine Architecture
+# Employee Lifecycle App Architecture
 
-Executive Summary
+This document defines how the Freight Services Inc. (FSI) Employee Lifecycle application works today, where it is going, and which design rules are non-negotiable.
 
-The following document outlines the foundational architecture and technical implementation plan for a standardized employee lifecycle management system. The core objective is to transition from a decentralized, manual process of communicating with Managed Service Providers (MSPs)—specifically Stellar Support, Stellar Sales, and BlackPoint—to a unified, automated rules engine.
+---
 
-This system utilizes a tripartite matrix structure—Role, Question, and Action—to govern entitlements and automate workflows. Implementation will leverage a Flask-based Python architecture, integrated with a PostgreSQL database and Postmark for transactional email delivery. The application is designed for containerized deployment on Google Cloud Run, ensuring scalability and consistency across the Freight Services Inc. (FSI) digital ecosystem.
+## 1) Purpose and Scope
 
+The Lifecycle application is FSI’s centralized onboarding and offboarding rules engine. It replaces fragmented, manual MSP communications with a single intake workflow that drives consistent ticket creation for:
 
---------------------------------------------------------------------------------
+- Stellar Support
+- Stellar Sales
+- BlackPoint
 
+The platform is organized around a **tripartite matrix model**:
 
-I. Foundational Rules Engine Architecture
+1. **Role Matrix** — baseline entitlements by employment profile.
+2. **Question Matrix** — conditional intake logic to reduce form fatigue.
+3. **Action Matrix** — deterministic mapping from intake data to execution payloads.
 
-The system operates on three distinct matrices that separate role definitions from intake logic and automated execution.
+---
 
-1. The Role Matrix (Baseline Entitlements)
+## 2) Current State (As-Is)
 
-This serves as the primary lookup table, defining default access and hardware provisioning based on the employment profile.
+### 2.1 Business Workflow
 
-Role Profile	M365 Account	Hardware Provisioning	Internal Network / VPN	Comm Systems	Specific Access
-Driver	Yes (Basic/F1)	No (Personal Device)	No	Optional Mobile	N/A
-Office/Ops	Yes (Standard/E3)	Laptop, Dock, Monitors	Yes (Local/Shares)	Optional Desk/Softphone	Dept DLs, Receptionist
-Manager	Yes (Standard/E3)	Laptop, Dock, Monitors	Yes (VPN Required)	Yes (Direct + Ext)	Elevated Approvals
-Warehouse	Yes (Shared/Kiosk)	Shared Workstation	Internal Only	Shared Area Phone	Warehouse Systems
-Contractor	Yes (Restricted)	No (BYOD)	Restricted VPN	No	Enforced Expiration
+- Onboarding/offboarding requests are captured through a centralized intake flow.
+- Role profiles determine default access, hardware, and communication entitlements.
+- Conditional question paths are used to ask only context-relevant fields.
+- Resulting actions are dispatched as MSP-facing tasks/tickets.
 
-2. The Question Matrix (Dynamic Intake Logic)
+### 2.2 Core Matrix Behavior
 
-To prevent "form fatigue," the front-end UI utilizes conditional branching. Questions are triggered only when relevant to the selected Role Profile.
+#### Role Matrix (Baseline Entitlements)
 
-* Global Fields: Legal Name, Preferred Name, Start Date, Manager, Location, and Role Profile.
-* Office/Manager Branch: Triggers questions regarding non-standard hardware, specific distribution lists (DLs), shared mailboxes, and dedicated external phone numbers.
-* Driver Branch: Focuses on mobile dispatch application access.
-* Contractor Branch: Requires a mandatory "hard-stop" contract end date for auto-disablement.
-* Offboarding Branch: Determines if the exit is immediate (high priority SLA) or scheduled, and handles mailbox conversion/forwarding requirements.
+| Role Profile | M365 Account | Hardware Provisioning | Internal Network / VPN | Comm Systems | Specific Access |
+|---|---|---|---|---|---|
+| Driver | Yes (Basic/F1) | No (Personal Device) | No | Optional Mobile | N/A |
+| Office/Ops | Yes (Standard/E3) | Laptop, Dock, Monitors | Yes (Local/Shares) | Optional Desk/Softphone | Dept DLs, Receptionist |
+| Manager | Yes (Standard/E3) | Laptop, Dock, Monitors | Yes (VPN Required) | Yes (Direct + Ext) | Elevated Approvals |
+| Warehouse | Yes (Shared/Kiosk) | Shared Workstation | Internal Only | Shared Area Phone | Warehouse Systems |
+| Contractor | Yes (Restricted) | No (BYOD) | Restricted VPN | No | Enforced Expiration |
 
-3. The Action Matrix (Automated Execution)
+#### Question Matrix (Dynamic Intake)
 
-This maps intake data to backend workflows, generating specific payloads for target systems.
+- **Global fields**: legal name, preferred name, start date, manager, location, role profile.
+- **Office/Manager branch**: non-standard hardware, DLs, shared mailboxes, external phone number.
+- **Driver branch**: mobile dispatch access.
+- **Contractor branch**: mandatory contract end date (hard stop).
+- **Offboarding branch**: immediate vs scheduled exit; mailbox conversion/forwarding.
 
-* Account Creation: If M365 is required, a ticket is routed to Stellar Support in the format first.last@freightservices.net.
-* Hardware Procurement: If hardware is selected, a ticket with shipping details and specs is routed to Stellar Sales.
-* Telecom Provisioning: If a phone/extension is needed, a ticket is routed to BlackPoint mapping the user to an extension/DID.
-* Immediate Offboarding: Triggers critical access revocation (Disable AD, Revoke M365 Sessions, Kill VPN) via high-priority email to Stellar Support.
+#### Action Matrix (Execution Routing)
 
+- **Account creation**: route M365 requests to Stellar Support.
+- **Hardware procurement**: route specs/shipping to Stellar Sales.
+- **Telecom provisioning**: route extension/DID requests to BlackPoint.
+- **Immediate offboarding**: trigger high-priority disablement workflow.
 
---------------------------------------------------------------------------------
+### 2.3 Technical Baseline
 
+- **Language**: Python (3.10+ target).
+- **Framework**: Flask with Blueprints.
+- **ORM/DB**: SQLAlchemy + PostgreSQL.
+- **Migrations**: Alembic via Flask-Migrate.
+- **Runtime**: Gunicorn (`wsgi:app`).
+- **Deployment**: Docker + Google Cloud Run + Cloud Build.
+- **UI**: Jinja2 templates with FSI typography standards.
 
-II. Technical Application Architecture
+### 2.4 Current Integration Posture
 
-The application follows the FSI Application Architecture Standard, a proven stack utilized across various internal repositories such as EXPENSES, FSI_POD, and QUOTES.
+- Transactional notifications/ticket communications are sent via **Postmark**.
+- Identity data uses a **shared users table pattern** aligned with other FSI systems.
+- Health checks are expected to verify DB/schema readiness before traffic acceptance.
 
-1. Core Stack Requirements
+---
 
-* Language: Python 3.8+ (3.10+ recommended).
-* Framework: Flask (utilizing Blueprints for modularity).
-* Database: PostgreSQL (production) or local PostgreSQL for development.
-* ORM: SQLAlchemy for data modeling.
-* Migrations: Alembic (via Flask-Migrate) for schema management.
-* Production Server: Gunicorn (WSGI).
+## 3) Future State (To-Be)
 
-2. Standard Directory Structure
+### 3.1 Product and Workflow Evolution
 
-The application should adhere to the established layout found in the fsi_STRUCTURE_EXAMPLE repository:
+- Expand from centralized intake to **full orchestration**, including status lifecycle visibility.
+- Add richer automation around fulfillment sequencing and SLA-aware offboarding priorities.
+- Strengthen policy-driven intake so role/question/action matrices are easier to govern and evolve.
 
-* app/auth.py: Handles authentication, registration, and RBAC (Role-Based Access Control).
-* app/models.py: Contains SQLAlchemy models and centralized table name constants (e.g., USERS_TABLE).
-* app/services/: Contains logic for the rules engine and external integrations (email, workflow).
-* app/config.py: Manages environment variables and runtime settings.
-* templates/: Jinja2 templates for the UI, following FSI design principles (Bebas Neue for headings, Roboto for body).
+### 3.2 Platform Maturity Goals
 
+- Increase automation confidence with stricter schema-readiness and fail-fast controls.
+- Improve internal operability (clearer health diagnostics, safer migrations, auditable change flow).
+- Continue alignment with Microsoft 365 identity workflows and SSO expectations.
 
---------------------------------------------------------------------------------
+### 3.3 Implementation Phases
 
+| Phase | Focus | Deliverables |
+|---|---|---|
+| Phase 1: Foundation | Central Intake | Role matrix, core intake form, generated ticket payload drafts |
+| Phase 2: Automation | Task Orchestration | Auto task generation, status dashboard, Postmark template sends |
+| Phase 3: Optimization | Full Integration | Guided wizard UX, Microsoft SSO/user sync, deeper MSP API hooks |
 
-III. Integration and Automation Strategy
+---
 
-1. Postmark Transactional Email Integration
+## 4) Design Absolutes (Non-Negotiable)
 
-Postmark is the mandatory provider for all outbound communications to MSPs. This ensures high deliverability for critical tickets.
+These rules are mandatory and must be enforced in implementation and review.
 
-* Implementation: Create an app/services/email.py layer to abstract API calls.
-* Template Model: Instead of hardcoding email bodies in Python, use Postmark's web UI to build templates (e.g., offboarding-immediate, new-user-account).
-* Payload Delivery: The Flask app pushes dynamic data (e.g., {{employee_name}}, {{start_date}}) to the Postmark API.
-* Configuration: Requires POSTMARK_SERVER_TOKEN and MAIL_DEFAULT_SENDER.
+### 4.1 Architecture and Layering
 
-2. Microsoft 365 and SSO
+1. **Service-layer rule**: business logic and external integrations belong in `/services` (or `app/services`), not route handlers.
+2. **Tripartite model rule**: role/question/action matrix responsibilities must remain logically separated.
+3. **Production entrypoint rule**: use `gunicorn --bind 0.0.0.0:${PORT} wsgi:app` (no `--factory`).
 
-The architecture prioritizes alignment with the existing Microsoft 365 environment.
+### 4.2 Database and Migration Governance
 
-* User Sync: The system should look into Microsoft SSO for user authentication and synchronization, ensuring that internal staff can access the tool using their standard @freightservices.net credentials.
-* Identity Management: The system acts as the source of truth for requested changes, which are then pushed to Microsoft 365 via Stellar Support tickets or direct API integrations.
+1. **Model constant rule**: every new table is declared as a module-level constant in `app/models.py` using `<TABLE_NAME_UPPER>_TABLE = "table_name"` before model use.
+2. **Alembic-only rollout rule**: no raw `.sql` schema rollout process; use `alembic upgrade head` or `flask db upgrade`.
+3. **Shared identity protection rule**: do not ship destructive shared-table changes (`drop_column`, `drop_table`, etc.) targeting `users`.
+4. **Readiness correctness rule**: `/readyz` or `/healthz` must return `503` with actionable missing schema details when out of sync.
 
-3. Database Schema Policy
+### 4.3 Email and Communication Governance
 
-* Table Constants: Every new database table must be registered as a module-level constant in models.py (e.g., ROLE_MATRIX_TABLE = 'role_matrix').
-* Alembic Migrations: SQL scripts are for historical reference only. All schema rollouts must be executed via flask db upgrade or alembic upgrade head.
+1. **Postmark-only rule**: all transactional email/ticket messaging uses Postmark API.
+2. **No inline email HTML rule**: Python code must not hardcode rendered email bodies.
+3. **Template model rule**: sends must pass dynamic data through a `template_model` dictionary to the email service layer.
 
+### 4.4 Security and Reliability
 
---------------------------------------------------------------------------------
+1. **Fail-fast production config rule**: with `FSI_PRODUCTION=true`, invalid/missing `SECRET_KEY` or `DATABASE_URL` must force maintenance mode or startup failure.
+2. **No ephemeral production secrets rule**: never fall back to generated runtime secrets in production.
+3. **Secrets management rule**: production secrets (including `POSTMARK_SERVER_TOKEN`) must come from managed secret storage.
 
+### 4.5 UI and Brand Consistency
 
-IV. Deployment and Operations
+1. **Font preconnect rule**: templates must include preconnect hints for `fonts.googleapis.com` and `fonts.gstatic.com` in base layout.
+2. **Typography rule**: use Roboto for body/UI controls and Bebas Neue for display headings (`.fsi-display`).
+3. **Fallback stack rule**: keep `system-ui, sans-serif` fallback stack intact.
 
-1. Containerization (Docker)
+---
 
-The application must be containerized for consistency across environments.
+## 5) Shared Identity Database Pattern
 
-* Base Image: Python-based slim image.
-* Entrypoint: gunicorn --bind 0.0.0.0:${PORT} wsgi:app.
-* Local Entrypoint: python wsgi.py.
+The Lifecycle app participates in a shared identity model and does not own an independent identity schema.
 
-2. Google Cloud Platform (GCP) Integration
+- `users` table remains a shared contract across FSI applications.
+- Lifecycle-driven migrations require manual review to avoid cross-application breakage.
+- Provisioning should commit identity changes before external notification dispatch to prevent inconsistent side effects.
 
-* Hosting: Google Cloud Run.
-* CI/CD: Google Cloud Build (cloudbuild.yaml) to automate image building and deployment.
-* Secrets Management: Critical values (e.g., DATABASE_URL, SECRET_KEY, POSTMARK_SERVER_TOKEN) must be stored in GCP Secret Manager and mounted as environment variables.
-* Health Checks: Implementation of /healthz or /readyz endpoints to validate database connectivity and schema readiness before shifting traffic.
+---
 
+## 6) Operational Checklist (Implementation Guardrails)
 
---------------------------------------------------------------------------------
+Use this checklist during development and review:
 
+- [ ] Business logic implemented in service layer, not route handlers.
+- [ ] New tables added with `*_TABLE` constants in `app/models.py`.
+- [ ] Migration revisions reviewed for destructive changes on shared tables.
+- [ ] Health endpoint validates schema readiness and emits actionable 503 responses.
+- [ ] Email flows use Postmark templates with `template_model` payloads.
+- [ ] Production startup uses approved Gunicorn command.
+- [ ] `SECRET_KEY`/`DATABASE_URL` fail-fast behavior verified for production mode.
+- [ ] Typography/font preconnect requirements preserved in base template.
 
-V. Implementation Phases
+---
 
-Phase	Focus	Deliverables
-Phase 1: Foundation	Central Intake	Role matrix, core intake form, and auto-generated email drafts for manual review.
-Phase 2: Automation	Task Orchestration	Automatic task generation, status dashboard, and Postmark API integration.
-Phase 3: Optimization	Full Integration	Guided wizard UI, Microsoft SSO/User Sync, and direct API hooks to MSP PSA tools.
+## 7) Summary
 
-This architecture eliminates the "scattered" nature of current MSP requests by consolidating all identity, hardware, and access workflows into a single, auditable source of truth.
-
-## Shared Identity Database Integration
-The Lifecycle application uses a **Shared Database Pattern** for identity provisioning. Instead of owning a separate identity schema, it maps and writes to the shared `users` table used across FSI applications.
-
-**Technical Governance for this Pattern**
-1. **Model Mapping:** `app/models.py` defines `USERS_TABLE = "users"` and maps identity fields through the `User` model used by onboarding workflows.
-2. **Migration Restrictions:** Alembic revisions generated in Lifecycle must be manually reviewed and sanitized so shared-table ownership is respected. Do not ship `drop_column`, `drop_table`, or destructive alterations against `users` from this repository.
-3. **Transaction Safety:** Onboarding processing commits shared-identity provisioning to PostgreSQL before dispatching Postmark notifications, preventing ticket creation when database constraints fail.
-
+The architecture is intentionally governance-first: centralized lifecycle intake, matrix-driven rules, service-layer execution, and strict controls around shared identity data and production reliability. The near-term roadmap deepens automation and observability while preserving these design absolutes.
