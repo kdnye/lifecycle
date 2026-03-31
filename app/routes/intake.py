@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, render_template, request
 
-from services.workflow import IntakeContext, build_action_plan
+from services.workflow import IntakeContext, build_action_plan, process_onboarding_request
 
 intake_bp = Blueprint("intake", __name__)
 
@@ -20,3 +20,9 @@ def preview_actions():
         manager_name=payload.get("manager_name"),
     )
     return jsonify({"actions": build_action_plan(context)})
+
+
+@intake_bp.post("/process-onboarding")
+def process_onboarding():
+    payload = request.get_json(silent=True) or {}
+    return jsonify(process_onboarding_request(payload))

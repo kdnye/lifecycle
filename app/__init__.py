@@ -18,6 +18,9 @@ def create_app() -> Flask:
         SECRET_KEY=settings.secret_key or "dev-only-key",
         SQLALCHEMY_DATABASE_URI=settings.database_url or "sqlite:///lifecycle.db",
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        POSTMARK_SERVER_TOKEN=settings.postmark_server_token,
+        DEFAULT_SENDER_EMAIL=settings.default_sender_email,
+        MAIL_MESSAGE_STREAM=settings.mail_message_stream,
     )
 
     db.init_app(app)
