@@ -71,4 +71,5 @@ class IntakeRequest(db.Model):
     last_name = db.Column(db.String(80), nullable=False)
     role_profile = db.Column(db.String(64), nullable=False)
     event_type = db.Column(db.String(32), nullable=False)  # onboarding | offboarding
+    manager_email = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(32), nullable=False, default="draft")

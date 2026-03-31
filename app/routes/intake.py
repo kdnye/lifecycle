@@ -36,6 +36,7 @@ def process_onboarding():
         last_name=payload["last_name"].strip(),
         role_profile=payload["role_profile"],
         event_type=payload["event_type"],
+        manager_email=payload.get("manager_email", "").strip() or None,
         status="processing",
     )
     db.session.add(new_request)

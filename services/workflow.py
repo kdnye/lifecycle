@@ -55,6 +55,7 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
 
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     tasks_triggered: list[str] = []
+    manager_email = (intake_request.manager_email or "").strip() or None
 
     existing_user = User.query.filter_by(email=generated_email).first()
     if not existing_user:
@@ -80,8 +81,22 @@ def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | in
                 "intake_id": intake_id,
             }
 
+    if manager_email:
+        manager_notified = send_templated_email(
+            to_email=manager_email,
+            template_alias="manager-onboarding-notification",
+            template_model={
+                "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
+                "role": intake_request.role_profile,
+                "requested_email": generated_email,
+            },
+        )
+        if manager_notified:
+            tasks_triggered.append(f"Manager Notified: {manager_email}")
+
     email_sent = send_templated_email(
         to_email="support@stellar.tech",
+        cc_email=manager_email,
         template_alias="new-user-account",
         template_model={
             "employee_name": f"{intake_request.first_name} {intake_request.last_name}",

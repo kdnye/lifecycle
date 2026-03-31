@@ -14,6 +14,7 @@ def send_templated_email(
     to_email: str,
     template_alias: str,
     template_model: dict,
+    cc_email: str | None = None,
 ) -> bool:
     """Send a Postmark templated transactional email."""
     server_token = current_app.config.get("POSTMARK_SERVER_TOKEN")
@@ -39,6 +40,8 @@ def send_templated_email(
         "TemplateModel": template_model,
         "MessageStream": message_stream,
     }
+    if cc_email:
+        payload["Cc"] = cc_email
 
     try:
         response = requests.post(
