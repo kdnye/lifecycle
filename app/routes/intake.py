@@ -25,4 +25,11 @@ def preview_actions():
 @intake_bp.post("/process-onboarding")
 def process_onboarding():
     payload = request.get_json(silent=True) or {}
-    return jsonify(process_onboarding_request(payload))
+    intake_id = payload.get("intake_id")
+
+    if not isinstance(intake_id, int):
+        return jsonify({"status": "error", "message": "`intake_id` (int) is required."}), 400
+
+    result = process_onboarding_request(intake_id)
+    status_code = 200 if result.get("status") == "processed" else 400
+    return jsonify(result), status_code

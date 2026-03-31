@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import secrets
+import string
 from dataclasses import dataclass
 
+from app.models import IntakeRequest, User, db
 from services.email import send_templated_email
 
 
@@ -26,53 +29,66 @@ def build_action_plan(context: IntakeContext) -> list[dict[str, str]]:
     return actions
 
 
-def process_onboarding_request(intake_data: dict) -> dict[str, str | list[str]]:
-    """Evaluates intake data and triggers MSP emails through Postmark templates."""
-    employee_name = (
-        intake_data.get("employee_name")
-        or f"{intake_data.get('first_name', '')} {intake_data.get('last_name', '')}".strip()
-    )
-    role = intake_data.get("role_profile", "")
+def generate_secure_temp_password(length: int = 16) -> str:
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def _build_generated_email(first_name: str, last_name: str) -> str:
+    sanitized_first = first_name.strip().lower().replace(" ", "")
+    sanitized_last = last_name.strip().lower().replace(" ", "")
+    return f"{sanitized_first}.{sanitized_last}@freightservices.net"
+
+
+def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | int]:
+    """Execute onboarding workflows and sync identity into the shared FSI users table."""
+    intake_request = db.session.get(IntakeRequest, intake_id)
+    if not intake_request:
+        return {"status": "error", "message": "Intake request not found.", "intake_id": intake_id}
+
+    if intake_request.event_type != "onboarding":
+        return {
+            "status": "error",
+            "message": "Only onboarding intake requests are eligible for processing.",
+            "intake_id": intake_id,
+        }
+
+    generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     tasks_triggered: list[str] = []
 
-    if intake_data.get("needs_m365"):
-        success = send_templated_email(
-            to_email="support@stellar.tech",
-            template_alias="new-user-account",
-            template_model={
-                "employee_name": employee_name,
-                "start_date": intake_data.get("start_date"),
-                "manager": intake_data.get("manager"),
-                "department": intake_data.get("department"),
-            },
+    existing_user = User.query.filter_by(email=generated_email).first()
+    if not existing_user:
+        new_user = User(
+            email=generated_email,
+            name=f"{intake_request.first_name} {intake_request.last_name}",
+            first_name=intake_request.first_name,
+            last_name=intake_request.last_name,
+            role="EMPLOYEE",
+            employee_approved=True,
+            is_active=True,
         )
-        if success:
-            tasks_triggered.append("Stellar Support: Account Creation")
+        new_user.set_password(generate_secure_temp_password())
+        db.session.add(new_user)
+        tasks_triggered.append("FSI Shared Identity: User Provisioned")
 
-    if intake_data.get("needs_hardware"):
-        success = send_templated_email(
-            to_email="sales@stellar.tech",
-            template_alias="hardware-procurement",
-            template_model={
-                "employee_name": employee_name,
-                "role": role,
-                "laptop_required": intake_data.get("needs_laptop", False),
-                "shipping_location": intake_data.get("location"),
-            },
-        )
-        if success:
-            tasks_triggered.append("Stellar Sales: Hardware Order")
+    email_sent = send_templated_email(
+        to_email="support@stellar.tech",
+        template_alias="new-user-account",
+        template_model={
+            "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
+            "requested_email": generated_email,
+            "role": intake_request.role_profile,
+        },
+    )
+    if email_sent:
+        tasks_triggered.append("Stellar Support: Account Creation")
 
-    if intake_data.get("needs_phone"):
-        success = send_templated_email(
-            to_email="support@blackpoint.tech",
-            template_alias="telecom-provisioning",
-            template_model={
-                "employee_name": employee_name,
-                "extension_needed": True,
-            },
-        )
-        if success:
-            tasks_triggered.append("BlackPoint: Telecom")
+    intake_request.status = "processed"
+    db.session.commit()
 
-    return {"status": "processing", "tasks_generated": tasks_triggered}
+    return {
+        "status": "processed",
+        "intake_id": intake_id,
+        "generated_email": generated_email,
+        "tasks_generated": tasks_triggered,
+    }
