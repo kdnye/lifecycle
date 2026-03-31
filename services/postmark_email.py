@@ -18,6 +18,7 @@ def send_transactional_email(
     recipient: str,
     template_id: int,
     template_model: dict,
+    cc_recipient: str | None = None,
 ) -> requests.Response:
     payload = {
         "From": config.default_sender,
@@ -26,6 +27,8 @@ def send_transactional_email(
         "TemplateModel": template_model,
         "MessageStream": config.message_stream,
     }
+    if cc_recipient:
+        payload["Cc"] = cc_recipient
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
