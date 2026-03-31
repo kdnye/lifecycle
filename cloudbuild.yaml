@@ -1,0 +1,19 @@
+steps:
+  - name: 'python:3.11-slim'
+    id: 'run-tests'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-env
+        pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-image'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/lifecycle:$COMMIT_SHA', '.']
+
+images:
+  - 'gcr.io/$PROJECT_ID/lifecycle:$COMMIT_SHA'
