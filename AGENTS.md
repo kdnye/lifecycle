@@ -38,3 +38,9 @@ The core logic relies on a **tripartite matrix structure**:
 *   **FSI Font Strategy:** Templates must include preconnect hints for `fonts.googleapis.com` and `fonts.gstatic.com` in `base.html` [23, 24].
 *   **Typography:** Use **Roboto** for body copy and UI controls, and **Bebas Neue** for display headings using the `.fsi-display` class [23, 24]. 
 *   **CSS Fallbacks:** Always maintain the resilient fallback stack `system-ui, sans-serif` [23, 24].
+
+## 4. Lifecycle App Specific Directives for AI Agents
+1. **Email Templating Strict Prohibition:** NEVER write HTML email bodies in Python files. Email rendering is managed in Postmark templates. Use service-layer template sends with a `template_model` dictionary.
+2. **Shared Schema Awareness:** This app shares PostgreSQL identity data with FSI EXPENSES. Do not alter `User` model structure or shared-table assumptions unless explicitly requested.
+3. **Migration Auditing Requirement:** If instructing `flask db migrate`, explicitly remind reviewers to inspect generated revisions and remove destructive shared-table operations (for example, any `drop_column` or `drop_table` targeting `users`) before `flask db upgrade`.
+
