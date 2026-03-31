@@ -3,6 +3,7 @@ from flask import Flask
 from app.config import load_settings, validate_production_settings
 from app.models import db
 from app.routes.health import health_bp
+from app.routes.help import help_bp
 from app.routes.intake import intake_bp
 
 
@@ -27,5 +28,6 @@ def create_app() -> Flask:
 
     app.register_blueprint(intake_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(help_bp)
 
     return app

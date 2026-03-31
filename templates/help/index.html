@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="fsi-container mt-4">
+    <h1 class="fsi-display">FSI Employee Lifecycle System</h1>
+    <p class="lead">Centralized rules engine for onboarding, offboarding, and identity management.</p>
+
+    <div class="help-grid mt-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5"><a href="{{ url_for('help.how_to_use') }}">How to Process an Event</a></h2>
+                <p>Step-by-step instructions on submitting a new hire, transfer, or offboarding request.</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5"><a href="{{ url_for('help.role_entitlements') }}">Role Entitlements Matrix</a></h2>
+                <p>Review the baseline access, hardware, and communication systems provisioned for each worker profile.</p>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5"><a href="{{ url_for('help.vendor_routing') }}">Automated Vendor Routing</a></h2>
+                <p>Understand how the Action Matrix translates form inputs into exact MSP support tickets via Postmark.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

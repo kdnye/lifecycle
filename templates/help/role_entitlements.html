@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="fsi-container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('help.index') }}">Help Center</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Role Matrix</li>
+        </ol>
+    </nav>
+
+    <h1 class="fsi-display">Role Entitlements Matrix</h1>
+    <p>The Lifecycle rules engine relies on baseline role templates to eliminate scattered, manual guesswork. Below are the default FSI entitlements.</p>
+    <hr>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Role Profile</th>
+                    <th>M365 Account</th>
+                    <th>Hardware</th>
+                    <th>Network / VPN</th>
+                    <th>Comm Systems</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Driver</strong></td>
+                    <td>Yes (Basic/F1)</td>
+                    <td>No (Personal Device)</td>
+                    <td>No</td>
+                    <td>Optional Mobile Extension</td>
+                </tr>
+                <tr>
+                    <td><strong>Office / Ops</strong></td>
+                    <td>Yes (Standard/E3)</td>
+                    <td>Laptop, Dock, Monitors</td>
+                    <td>Yes (Local + File Shares)</td>
+                    <td>Desk / Softphone</td>
+                </tr>
+                <tr>
+                    <td><strong>Manager</strong></td>
+                    <td>Yes (Standard/E3)</td>
+                    <td>Laptop, Dock, Monitors</td>
+                    <td>Yes (VPN Required)</td>
+                    <td>Direct Line + Ext</td>
+                </tr>
+                <tr>
+                    <td><strong>Warehouse</strong></td>
+                    <td>Yes (Shared/Kiosk)</td>
+                    <td>Shared Workstation</td>
+                    <td>Internal Only</td>
+                    <td>Shared Area Phone</td>
+                </tr>
+                <tr>
+                    <td><strong>Contractor</strong></td>
+                    <td>Yes (Restricted)</td>
+                    <td>No (BYOD)</td>
+                    <td>Restricted VLAN</td>
+                    <td>No</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
