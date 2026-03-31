@@ -22,6 +22,7 @@ def create_app() -> Flask:
         POSTMARK_SERVER_TOKEN=settings.postmark_server_token,
         DEFAULT_SENDER_EMAIL=settings.default_sender_email,
         MAIL_MESSAGE_STREAM=settings.mail_message_stream,
+        HR_CC_EMAILS=settings.hr_cc_emails,
     )
 
     db.init_app(app)
