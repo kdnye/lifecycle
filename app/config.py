@@ -9,7 +9,7 @@ class Settings:
     secret_key: str | None
     database_url: str | None
     postmark_server_token: str | None
-    mail_default_sender: str | None
+    default_sender_email: str
     mail_message_stream: str
 
 
@@ -20,8 +20,8 @@ def load_settings() -> Settings:
         secret_key=os.getenv("SECRET_KEY"),
         database_url=os.getenv("DATABASE_URL"),
         postmark_server_token=os.getenv("POSTMARK_SERVER_TOKEN"),
-        mail_default_sender=os.getenv("MAIL_DEFAULT_SENDER"),
-        mail_message_stream=os.getenv("MAIL_MESSAGE_STREAM", "onboarding"),
+        default_sender_email=os.getenv("DEFAULT_SENDER_EMAIL", "it-automation@freightservices.net"),
+        mail_message_stream=os.getenv("MAIL_MESSAGE_STREAM", "outbound"),
     )
 
 
