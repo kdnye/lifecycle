@@ -107,6 +107,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     manager_email = (intake_request.manager_email or "").strip() or None
     ops_email = os.getenv("FSI_OPS_EMAIL", "ops@freightservices.net")
+    stellar_sales_email = os.getenv("STELLAR_SALES_EMAIL", "sales@stellar.tech")
     cc_email, primary_hr_email = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
 
@@ -181,6 +182,23 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
         raise RuntimeError("Failed to notify Stellar Support via Postmark.")
 
     tasks_triggered.append("Stellar Support: Account Creation")
+
+    if intake_request.role_profile in {"office", "manager"}:
+        hardware_procurement_sent = send_templated_email(
+            to_email=stellar_sales_email,
+            cc_email=cc_email or None,
+            template_alias="hardware-procurement",
+            template_model={
+                "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
+                "requested_email": generated_email,
+                "role": intake_request.role_profile,
+                "request_id": intake_request.id,
+            },
+        )
+        if not hardware_procurement_sent:
+            raise RuntimeError("Failed to notify Stellar Sales for hardware procurement.")
+        tasks_triggered.append("Stellar Sales: Hardware Procurement")
+
     return tasks_triggered
 
 
