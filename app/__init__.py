@@ -5,6 +5,7 @@ from app.models import db
 from app.routes.health import health_bp
 from app.routes.help import help_bp
 from app.routes.intake import intake_bp
+from app.routes.webhooks import webhooks_bp
 
 
 def create_app() -> Flask:
@@ -30,5 +31,6 @@ def create_app() -> Flask:
     app.register_blueprint(intake_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(help_bp)
+    app.register_blueprint(webhooks_bp)
 
     return app
