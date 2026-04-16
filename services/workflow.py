@@ -184,16 +184,20 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
     tasks_triggered.append("Stellar Support: Account Creation")
 
     if intake_request.role_profile in {"office", "manager"}:
+        hardware_template_model = {
+            "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
+            "requested_email": generated_email,
+            "role": intake_request.role_profile,
+            # Subject/body rendering stays in Postmark template configuration.
+            # request_id is provided so Postmark can render:
+            # "Hardware Procurement [RequestID: {{request_id}}]"
+            "request_id": intake_request.id,
+        }
         hardware_procurement_sent = send_templated_email(
             to_email=stellar_sales_email,
             cc_email=cc_email or None,
             template_alias="hardware-procurement",
-            template_model={
-                "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
-                "requested_email": generated_email,
-                "role": intake_request.role_profile,
-                "request_id": intake_request.id,
-            },
+            template_model=hardware_template_model,
         )
         if not hardware_procurement_sent:
             raise RuntimeError("Failed to notify Stellar Sales for hardware procurement.")
