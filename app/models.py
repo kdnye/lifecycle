@@ -12,6 +12,7 @@ ROLE_MATRIX_TABLE = "role_matrix"
 QUESTION_MATRIX_TABLE = "question_matrix"
 ACTION_MATRIX_TABLE = "action_matrix"
 INTAKE_REQUEST_TABLE = "intake_request"
+INVENTORY_TABLE = "inventory"
 
 
 class User(db.Model):
@@ -83,3 +84,13 @@ class IntakeRequest(db.Model):
     termination_date = db.Column(db.Date, nullable=True)
     is_immediate = db.Column(db.Boolean, nullable=False, default=False)
     forwarding_email = db.Column(db.String(255), nullable=True)
+
+
+class Inventory(db.Model):
+    __tablename__ = INVENTORY_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    serial_number = db.Column(db.String(128), nullable=False, unique=True, index=True)
+    device_type = db.Column(db.String(64), nullable=False, default="Laptop")
+    intake_request_id = db.Column(db.Integer, db.ForeignKey(f"{INTAKE_REQUEST_TABLE}.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
