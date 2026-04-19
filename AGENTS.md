@@ -54,7 +54,7 @@ This application is part of the FSI shared infrastructure ecosystem. See [FSI_EC
 
 **Schema ownership rule:** Never run structural migrations against `users`. Review all generated Alembic revisions for destructive operations on shared tables before applying.
 
-**Identity data flow:** Lifecycle creates and onboards employee records that are consumed downstream by expenses, fsi_pod, and driver-paperwork for identity lookup and access.
+**Identity data flow:** Lifecycle creates and onboards employee records that are consumed downstream by expenses, fsi_pod, driver-paperwork, and motive-dashboard for identity lookup and access.
 
 **Future integrations:** When the IT Inventory and Hard Asset Tracking apps are created, Lifecycle will trigger provisioning events to those apps on employee onboard/offboard.
 

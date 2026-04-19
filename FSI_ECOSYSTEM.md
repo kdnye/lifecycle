@@ -12,9 +12,9 @@
 | **Expenses** | `kdnye/expenses` | Live (primary) | All employees — expense reporting and approval | Flask, PostgreSQL, GCS |
 | **FSI POD** | `kdnye/fsi_pod` | Launching soon | Drivers, ops team — proof of delivery capture | Flask, PostgreSQL, GCS |
 | **Lifecycle** | `kdnye/lifecycle` | In testing | HR/admin — employee onboarding and offboarding | Flask, PostgreSQL, Postmark |
-| **Driver Paperwork** | `kdnye/driver-paperwork` | In development | Drivers, ops — driver document management | Flask, PostgreSQL, GCS |
+| **Driver Paperwork** | `kdnye/driver-paperwork` | In development | Drivers, ops — driver document management | Flask, PostgreSQL, Couchdrop |
 | **Motive Dashboard** | `kdnye/motive-dashboard` | Launching soon | Ops managers — real-time fleet monitoring | Streamlit, Cloud Functions, PostgreSQL |
-| **Smart Trucks** | `kdnye/smart-trucks` | In development | Hardware/ops — edge GPS/BLE/power telematics | Python containers, Balena, SQLite |
+| **Smart Trucks** | `kdnye/smart-trucks` | In development | Hardware/ops — edge GPS/BLE/power telematics | Python containers, Balena, SQLite (edge) + PostgreSQL (cloud sync) |
 | **IT Inventory** | *(planned)* | Not started | IT team — hardware and software asset tracking | TBD (FSI standard) |
 | **Hard Asset Tracking** | *(planned)* | Not started | Ops — physical asset lifecycle management | TBD (FSI standard) |
 
@@ -34,7 +34,7 @@ Schema ownership determines who may run structural migrations (`ALTER TABLE`, `D
 | `expense_reports`, `expense_items` | `kdnye/expenses` | — |
 | `shipments`, `shipment_legs`, `pod_records`, `shipment_leg_transitions` | `kdnye/fsi_pod` | motive-dashboard (read) |
 | `driver_documents` and related | `kdnye/driver-paperwork` | — |
-| `fleet_status_monitor`, `geofences`, truck location and event tables | `kdnye/motive-dashboard` | — |
+| `fleet_status_monitor`, `geofence_dwell_history`, `geofence_aliases`, event tables | `kdnye/motive-dashboard` | smart-trucks (write-only producer) |
 | `employees`, `onboarding_requests`, `offboarding_requests` | `kdnye/lifecycle` | — |
 
 ### Migration Discipline
@@ -48,7 +48,7 @@ Schema ownership determines who may run structural migrations (`ALTER TABLE`, `D
 ## 3. Cross-App Data Flows
 
 ```
-lifecycle  ──→  users table  ──→  expenses / fsi_pod / driver-paperwork
+lifecycle  ──→  users table  ──→  expenses / fsi_pod / driver-paperwork / motive-dashboard
                                   (identity consumed at login + display)
 
 smart-trucks  ──→  telematics tables  ──→  motive-dashboard
@@ -76,7 +76,7 @@ Core rules (summary):
 - Model Constant Rule (`*_TABLE` constants in `models.py`)
 - Alembic-only migrations
 - Postmark for all transactional email (no SMTP)
-- GCS for file storage (ADC auth, no service account JSON keys)
+- GCS or equivalent for file storage (ADC auth preferred; `driver-paperwork` uses Couchdrop + `GCS_TOKEN`)
 - Fail-fast on missing `SECRET_KEY` / `DATABASE_URL` in production
 - Roboto + Bebas Neue typography with Google Fonts preconnect
 
