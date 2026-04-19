@@ -12,6 +12,9 @@ class Settings:
     default_sender_email: str
     mail_message_stream: str
     hr_cc_emails: str
+    fsi_ops_email: str
+    stellar_support_email: str
+    stellar_sales_email: str
 
 
 def load_settings() -> Settings:
@@ -27,6 +30,9 @@ def load_settings() -> Settings:
             "HR_CC_EMAILS",
             "hr@freightservices.net, suzann.ghekas@freightservices.net",
         ),
+        fsi_ops_email=os.getenv("FSI_OPS_EMAIL", "ops@freightservices.net"),
+        stellar_support_email=os.getenv("STELLAR_SUPPORT_EMAIL", "support@stellar.tech"),
+        stellar_sales_email=os.getenv("STELLAR_SALES_EMAIL", "sales@stellar.tech"),
     )
 
 
@@ -37,4 +43,6 @@ def validate_production_settings(settings: Settings) -> list[str]:
             issues.append("Missing required SECRET_KEY while FSI_PRODUCTION=true.")
         if not settings.database_url:
             issues.append("Missing required DATABASE_URL while FSI_PRODUCTION=true.")
+        if not settings.postmark_server_token:
+            issues.append("Missing required POSTMARK_SERVER_TOKEN while FSI_PRODUCTION=true.")
     return issues

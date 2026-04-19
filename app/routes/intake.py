@@ -8,7 +8,6 @@ from services.workflow import (
     build_action_plan,
     execute_lifecycle_event,
     initiate_lifecycle_event,
-    process_onboarding_request,  # legacy import path retained for patch-based tests
 )
 
 intake_bp = Blueprint("intake", __name__)
@@ -44,7 +43,6 @@ def preview_actions():
 
 
 @intake_bp.post("/process")
-@intake_bp.post("/process-onboarding")
 def process_intake():
     payload = request.get_json(silent=True) or {}
 

@@ -4,7 +4,6 @@ import secrets
 import string
 from dataclasses import dataclass
 from datetime import date
-import os
 
 from flask import current_app, url_for
 
@@ -106,8 +105,9 @@ def initiate_lifecycle_event(intake_id: int) -> dict[str, str | int]:
 def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     manager_email = (intake_request.manager_email or "").strip() or None
-    ops_email = os.getenv("FSI_OPS_EMAIL", "ops@freightservices.net")
-    stellar_sales_email = os.getenv("STELLAR_SALES_EMAIL", "sales@stellar.tech")
+    ops_email = current_app.config.get("FSI_OPS_EMAIL")
+    stellar_support_email = current_app.config.get("STELLAR_SUPPORT_EMAIL")
+    stellar_sales_email = current_app.config.get("STELLAR_SALES_EMAIL")
     cc_email, primary_hr_email = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
 
@@ -169,7 +169,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
                 tasks_triggered.append(f"FSI Ops: Provision Internal Assets ({len(assets_needed)} items)")
 
     email_sent = send_templated_email(
-        to_email="support@stellar.tech",
+        to_email=stellar_support_email,
         cc_email=cc_email or None,
         template_alias="new-user-account",
         template_model={
@@ -217,6 +217,8 @@ def _format_termination_date(termination_date: date | None, is_immediate: bool) 
 def _execute_offboarding(intake_request: IntakeRequest) -> list[str]:
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     manager_email = (intake_request.manager_email or "").strip() or None
+    stellar_support_email = current_app.config.get("STELLAR_SUPPORT_EMAIL")
+    ops_email = current_app.config.get("FSI_OPS_EMAIL")
     cc_email, _ = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
 
@@ -228,7 +230,7 @@ def _execute_offboarding(intake_request: IntakeRequest) -> list[str]:
 
     template_alias = "offboarding-immediate" if intake_request.is_immediate else "offboarding-standard"
     stellar_sent = send_templated_email(
-        to_email="support@stellar.tech",
+        to_email=stellar_support_email,
         cc_email=cc_email or None,
         template_alias=template_alias,
         template_model={
@@ -247,7 +249,7 @@ def _execute_offboarding(intake_request: IntakeRequest) -> list[str]:
 
     if intake_request.role_profile == "driver":
         ops_sent = send_templated_email(
-            to_email="ops@freightservices.net",
+            to_email=ops_email,
             cc_email=cc_email or None,
             template_alias="internal-fleet-provisioning",
             template_model={
@@ -294,21 +296,3 @@ def execute_lifecycle_event(intake_id: int) -> dict[str, str | int | list[str]]:
         db.session.rollback()
         current_app.logger.exception("Lifecycle execution failed for intake %s", intake_id)
         return {"status": "error", "message": str(exc), "intake_id": intake_id}
-
-
-def process_onboarding_request(intake_id: int) -> dict[str, str | list[str] | int]:
-    """Backward compatible wrapper for existing callers."""
-    intake_request = db.session.get(IntakeRequest, intake_id)
-    if not intake_request:
-        return {"status": "error", "message": "Intake request not found.", "intake_id": intake_id}
-
-    if intake_request.event_type != "onboarding":
-        return {
-            "status": "error",
-            "message": "Only onboarding intake requests are eligible for processing.",
-            "intake_id": intake_id,
-        }
-
-    intake_request.status = "approved"
-    db.session.commit()
-    return execute_lifecycle_event(intake_id)

@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 
 from app.config import load_settings, validate_production_settings
@@ -9,7 +11,7 @@ from app.routes.webhooks import webhooks_bp
 
 
 def create_app() -> Flask:
-    app = Flask(__name__, template_folder="../templates")
+    app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), "..", "templates"))
 
     settings = load_settings()
     production_errors = validate_production_settings(settings)
@@ -24,6 +26,9 @@ def create_app() -> Flask:
         DEFAULT_SENDER_EMAIL=settings.default_sender_email,
         MAIL_MESSAGE_STREAM=settings.mail_message_stream,
         HR_CC_EMAILS=settings.hr_cc_emails,
+        FSI_OPS_EMAIL=settings.fsi_ops_email,
+        STELLAR_SUPPORT_EMAIL=settings.stellar_support_email,
+        STELLAR_SALES_EMAIL=settings.stellar_sales_email,
     )
 
     db.init_app(app)
