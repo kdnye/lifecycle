@@ -2,6 +2,8 @@
 
 This file provides architectural context and strict coding guidelines for the Freight Services Inc. (FSI) Employee Lifecycle application [2]. When generating, refactoring, or reviewing code in this repository, you must adhere to the FSI Technical Governance Standard [3].
 
+See also: [FSI_ECOSYSTEM.md](./FSI_ECOSYSTEM.md) for the full app portfolio and shared DB schema map.
+
 ## 1. Project Overview
 This application is a centralized onboarding and offboarding rules engine that automates MSP ticket creation (Stellar Support, Stellar Sales, BlackPoint) [2]. 
 The core logic relies on a **tripartite matrix structure**:
@@ -44,3 +46,16 @@ The core logic relies on a **tripartite matrix structure**:
 2. **Shared Schema Awareness:** This app shares PostgreSQL identity data with FSI EXPENSES. Do not alter `User` model structure or shared-table assumptions unless explicitly requested.
 3. **Migration Auditing Requirement:** If instructing `flask db migrate`, explicitly remind reviewers to inspect generated revisions and remove destructive shared-table operations (for example, any `drop_column` or `drop_table` targeting `users`) before `flask db upgrade`.
 
+## 5. Ecosystem Context
+
+This application is part of the FSI shared infrastructure ecosystem. See [FSI_ECOSYSTEM.md](./FSI_ECOSYSTEM.md) for the full app portfolio and cross-app data flows.
+
+**Shared DB role:** Secondary consumer of `users` (owned by `kdnye/expenses`). This app owns onboarding/offboarding/lifecycle tables.
+
+**Schema ownership rule:** Never run structural migrations against `users`. Review all generated Alembic revisions for destructive operations on shared tables before applying.
+
+**Identity data flow:** Lifecycle creates and onboards employee records that are consumed downstream by expenses, fsi_pod, and driver-paperwork for identity lookup and access.
+
+**Future integrations:** When the IT Inventory and Hard Asset Tracking apps are created, Lifecycle will trigger provisioning events to those apps on employee onboard/offboard.
+
+**Governance:** The [FSI Application Architecture Standard](./FSI%20Application%20Architecture%20Standard:%20Technical%20Governance%20Handbook) is maintained in this repository as the canonical reference for all FSI apps.
