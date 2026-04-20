@@ -6,6 +6,7 @@ from app.config import load_settings, validate_production_settings
 from app.auth_utils import attach_current_user
 from app.models import db
 from app.routes.auth import auth_bp
+from app.routes.dashboard import dashboard_bp
 from app.routes.health import health_bp
 from app.routes.help import help_bp
 from app.routes.intake import intake_bp
@@ -36,6 +37,7 @@ def create_app() -> Flask:
     db.init_app(app)
     app.before_request(attach_current_user)
 
+    app.register_blueprint(dashboard_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(intake_bp)
     app.register_blueprint(health_bp)
