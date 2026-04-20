@@ -65,13 +65,13 @@
               </tr>
             </thead>
             <tbody>
-              {% for request in metrics.recent_activity %}
+              {% for req in metrics.recent_activity %}
                 <tr>
-                  <td>{{ request.first_name }}</td>
-                  <td>{{ request.last_name }}</td>
-                  <td>{{ request.event_type }}</td>
-                  <td>{{ request.role_profile }}</td>
-                  <td>{{ request.status }}</td>
+                  <td>{{ req.first_name }}</td>
+                  <td>{{ req.last_name }}</td>
+                  <td>{{ req.event_type }}</td>
+                  <td>{{ req.role_profile }}</td>
+                  <td>{{ req.status }}</td>
                 </tr>
               {% else %}
                 <tr>
