@@ -182,8 +182,18 @@ wsgi.py          # Production entrypoint
 - `DATABASE_URL`
 - `SECRET_KEY`
 - `POSTMARK_SERVER_TOKEN`
-- `MAIL_DEFAULT_SENDER`
+- `DEFAULT_SENDER_EMAIL`
 - `MAIL_MESSAGE_STREAM`
+- `HR_CC_EMAILS`
+- `FSI_OPS_EMAIL`
+- `STELLAR_SUPPORT_EMAIL`
+- `STELLAR_SALES_EMAIL`
+
+### Notification routing notes
+
+- All transactional lifecycle notifications are sent through Postmark templates via the service layer (`services/email.py` and `services/workflow.py`).
+- Vendor and operations routing addresses are configured through environment variables, not hardcoded in route handlers.
+- `DEFAULT_SENDER_EMAIL` is the canonical sender env var; `MAIL_DEFAULT_SENDER` is no longer used by the application config.
 
 ---
 
