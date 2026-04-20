@@ -2,206 +2,215 @@
 {% block title %}Employee Lifecycle Intake{% endblock %}
 
 {% block content %}
-  <h1 class="fsi-display">Employee Lifecycle Intake</h1>
-  <div class="card">
-    <p>Starter outline: collect intake data, map through Role + Question + Action matrices, and preview MSP actions.</p>
-    <form id="intake-form">
-      <label for="first_name">Legal First Name</label>
-      <input id="first_name" name="first_name" required />
+<h1 class="fsi-display">Employee Lifecycle Intake</h1>
 
-      <label for="last_name">Legal Last Name</label>
-      <input id="last_name" name="last_name" required />
+<div class="card" id="wizard-container">
+  <form id="intake-form">
 
-      <label for="manager_email">Manager Email (Optional)</label>
-      <input
-        type="email"
-        id="manager_email"
-        name="manager_email"
-        placeholder="manager@freightservices.net"
-      />
-
-      <label for="role_profile">Role profile</label>
-      <select id="role_profile" name="role_profile">
-        <option value="driver">Driver</option>
-        <option value="office" selected>Office/Ops</option>
-        <option value="manager">Manager</option>
-        <option value="warehouse">Warehouse</option>
-        <option value="contractor">Contractor</option>
-      </select>
-
-      <label for="event_type">Lifecycle event</label>
-      <select id="event_type" name="event_type">
+    <div id="step-1" class="wizard-step">
+      <h3 class="h5 border-bottom pb-2">1. Event Details</h3>
+      <label for="event_type">Lifecycle Event</label>
+      <select id="event_type" name="event_type" class="form-control mb-3">
         <option value="onboarding" selected>Onboarding</option>
         <option value="offboarding">Offboarding</option>
       </select>
 
-      <div id="driver-assets-section" style="display: none;" class="card mt-3 mb-3 p-3 bg-light">
-        <h3 class="h6">Internal Driver Equipment Tracking</h3>
-        <p class="small text-muted">Select the physical assets this driver requires. This will notify FSI Operations.</p>
+      <label for="first_name">Legal First Name</label>
+      <input type="text" id="first_name" name="first_name" class="form-control mb-3" required />
 
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="driver_needs_laptop" name="driver_needs_laptop" value="true" />
-          <label class="form-check-label" for="driver_needs_laptop">Company Laptop</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="driver_needs_printer" name="driver_needs_printer" value="true" />
-          <label class="form-check-label" for="driver_needs_printer">Mobile Printer</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="driver_needs_fuel_card" name="driver_needs_fuel_card" value="true" />
-          <label class="form-check-label" for="driver_needs_fuel_card">Fuel Card</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="driver_needs_vehicle" name="driver_needs_vehicle" value="true" />
-          <label class="form-check-label" for="driver_needs_vehicle">Box Truck Assignment</label>
-        </div>
+      <label for="last_name">Legal Last Name</label>
+      <input type="text" id="last_name" name="last_name" class="form-control mb-3" required />
+
+      <label for="start_date">First Day (Start Date)</label>
+      <input type="date" id="start_date" name="start_date" class="form-control mb-3" required />
+
+      <button type="button" class="btn btn-primary mt-3" onclick="nextStep(2)">Continue</button>
+    </div>
+
+    <div id="step-2" class="wizard-step" style="display: none;">
+      <h3 class="h5 border-bottom pb-2">2. Role &amp; Hierarchy</h3>
+
+      <div class="alert alert-info">
+        <strong>Provisioned Email:</strong> <span id="generated_email_display"></span>
+      </div>
+      <input type="hidden" id="generated_email" name="generated_email" />
+
+      <label for="role_profile">Role Profile</label>
+      <select id="role_profile" name="role_profile" class="form-control mb-3">
+        <option value="office">Office / Ops</option>
+        <option value="driver">Driver</option>
+        <option value="manager">Manager</option>
+        <option value="warehouse">Warehouse</option>
+      </select>
+
+      <label for="manager_email">Manager Email</label>
+      <input type="email" id="manager_email" name="manager_email" class="form-control mb-3" required />
+
+      <label for="location">Primary Location (City/Branch)</label>
+      <input type="text" id="location" name="location" class="form-control mb-3" required />
+
+      <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(1)">Back</button>
+      <button type="button" class="btn btn-primary mt-3" onclick="nextStep(3)">Continue</button>
+    </div>
+
+    <div id="step-3" class="wizard-step" style="display: none;">
+      <h3 class="h5 border-bottom pb-2">3. Hardware &amp; Equipment</h3>
+
+      <label>Does this employee need equipment?</label>
+      <select id="needs_equipment" name="needs_equipment" class="form-control mb-3" onchange="toggleEquipmentLogic()">
+        <option value="no" selected>No</option>
+        <option value="yes">Yes</option>
+      </select>
+
+      <div id="equipment_details" style="display: none;" class="p-3 bg-light border rounded">
+        <label>Equipment Status</label>
+        <select name="equip_status" id="equip_status" class="form-control mb-2">
+          <option value="existing">Use Existing / In-Stock</option>
+          <option value="new">Order New</option>
+        </select>
+
+        <label>Form Factor</label>
+        <select name="equip_type" id="equip_type" class="form-control mb-2">
+          <option value="laptop">Laptop + Dock</option>
+          <option value="desktop">Desktop</option>
+        </select>
+
+        <label>Peripherals (Monitors/Keyboard)</label>
+        <select name="equip_peripherals" id="equip_peripherals" class="form-control mb-2">
+          <option value="fsi_stock">Use FSI Stock</option>
+          <option value="order_new">Order New</option>
+          <option value="personal">Employee using personal peripherals</option>
+        </select>
       </div>
 
-      <div id="offboarding-section" style="display: none;" class="card mt-3 mb-3 p-3 bg-light">
-        <h3 class="h6">Offboarding Details</h3>
-        <p class="small text-muted">Provide deprovisioning timing and mailbox forwarding requirements.</p>
+      <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(2)">Back</button>
+      <button type="button" class="btn btn-primary mt-3" onclick="nextStep(4)">Continue</button>
+    </div>
 
-        <label for="termination_date">Termination Date</label>
-        <input type="date" id="termination_date" name="termination_date" />
+    <div id="step-4" class="wizard-step" style="display: none;">
+      <h3 class="h5 border-bottom pb-2">4. Telecom &amp; Phone</h3>
 
-        <div class="form-check mt-2 mb-2">
-          <input class="form-check-input" type="checkbox" id="is_immediate" name="is_immediate" value="true" />
-          <label class="form-check-label" for="is_immediate">Immediate Offboarding (critical disablement)</label>
-        </div>
+      <label>Need a new phone number (DID)?</label>
+      <select id="needs_did" name="needs_did" class="form-control mb-3" onchange="togglePhoneLogic()">
+        <option value="no" selected>No</option>
+        <option value="yes">Yes</option>
+      </select>
 
-        <label for="forwarding_email">Forwarding Email (Optional)</label>
-        <input
-          type="email"
-          id="forwarding_email"
-          name="forwarding_email"
-          placeholder="forwarding@freightservices.net"
-        />
+      <div id="phone_details" style="display: none;" class="p-3 bg-light border rounded">
+        <label>Preferred Area Code</label>
+        <input type="text" id="area_code" name="area_code" class="form-control mb-2" placeholder="e.g., 520" />
+
+        <label>Require a physical VOIP phone?</label>
+        <select id="needs_physical_phone" name="needs_physical_phone" class="form-control mb-2">
+          <option value="no">No, softphone only</option>
+          <option value="yes">Yes</option>
+        </select>
       </div>
 
-      <button type="submit" id="submit-btn">Submit For Approval</button>
-    </form>
+      <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(3)">Back</button>
+      <button type="button" class="btn btn-primary mt-3" onclick="generatePreviews(); nextStep(5);">Review &amp; Submit</button>
+    </div>
 
-    <h2 class="fsi-display">Expected Vendor Tasks</h2>
-    <p id="tasks-status" aria-live="polite"></p>
-    <ul id="tasks-list"></ul>
+    <div id="step-5" class="wizard-step" style="display: none;">
+      <h3 class="h5 border-bottom pb-2">5. Dispatch Preview</h3>
+      <p class="text-muted small">The following routing will occur upon submission. Required parties (Manager, HR, Suzann, Accounting) will be CC'd automatically.</p>
 
-    <pre id="result"></pre>
-  </div>
+      <div class="card mb-3">
+        <div class="card-header bg-dark text-white">IT / System Provisioning (Stellar)</div>
+        <div class="card-body"><pre id="preview_stellar" class="small"></pre></div>
+      </div>
 
-  <script>
-    const form = document.getElementById('intake-form');
-    const roleProfile = document.getElementById('role_profile');
-    const driverAssetsSection = document.getElementById('driver-assets-section');
-    const eventType = document.getElementById('event_type');
-    const offboardingSection = document.getElementById('offboarding-section');
-    const terminationDate = document.getElementById('termination_date');
-    const immediateToggle = document.getElementById('is_immediate');
-    const forwardingEmail = document.getElementById('forwarding_email');
-    const tasksStatus = document.getElementById('tasks-status');
-    const tasksList = document.getElementById('tasks-list');
-    const result = document.getElementById('result');
-    const submitBtn = document.getElementById('submit-btn');
+      <div class="card mb-3" id="preview_compass_container" style="display: none;">
+        <div class="card-header bg-dark text-white">Telecom Provisioning (Compass/Blackpoint)</div>
+        <div class="card-body"><pre id="preview_compass" class="small"></pre></div>
+      </div>
 
-    const getPayload = () => Object.fromEntries(new FormData(form).entries());
+      <div id="submission_result" class="alert mt-3" style="display:none;"></div>
 
-    const toggleDriverAssets = () => {
-      if (roleProfile.value === 'driver') {
-        driverAssetsSection.style.display = 'block';
-        return;
-      }
+      <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(4)">Back to Edit</button>
+      <button type="submit" id="submit-btn" class="btn btn-success mt-3">Confirm &amp; Send Dispatches</button>
+    </div>
+  </form>
+</div>
 
-      driverAssetsSection.style.display = 'none';
-      driverAssetsSection.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-        checkbox.checked = false;
+<script>
+  function nextStep(stepNumber) {
+    document.querySelectorAll('.wizard-step').forEach(el => el.style.display = 'none');
+    document.getElementById(`step-${stepNumber}`).style.display = 'block';
+
+    if (stepNumber === 2) {
+      const fn = document.getElementById('first_name').value.trim().toLowerCase();
+      const ln = document.getElementById('last_name').value.trim().toLowerCase();
+      const email = `${fn}.${ln}@freightservices.net`.replace(/\s+/g, '');
+      document.getElementById('generated_email_display').innerText = email;
+      document.getElementById('generated_email').value = email;
+    }
+  }
+
+  function toggleEquipmentLogic() {
+    const display = document.getElementById('needs_equipment').value === 'yes' ? 'block' : 'none';
+    document.getElementById('equipment_details').style.display = display;
+  }
+
+  function togglePhoneLogic() {
+    const display = document.getElementById('needs_did').value === 'yes' ? 'block' : 'none';
+    document.getElementById('phone_details').style.display = display;
+  }
+
+  function generatePreviews() {
+    const data = Object.fromEntries(new FormData(document.getElementById('intake-form')).entries());
+    const fullName = `${data.first_name} ${data.last_name}`;
+
+    let stellarBody = `To: support@stellar.tech\nSubject: FSI Onboarding: ${fullName}\n\nStellar support,\n\nWe are onboarding a new employee, ${fullName}. Their first day is ${data.start_date}.\n\nPlease create an email and user account for them using: ${data.generated_email}\n\nThis employee will be an [${data.role_profile}] employee; please use the ${data.role_profile.toUpperCase()} permissions profile.\n\n`;
+
+    if (data.needs_equipment === 'yes') {
+      stellarBody += `They WILL be needing equipment. Status: ${data.equip_status.toUpperCase()}.\nRequesting: ${data.equip_type.toUpperCase()} form factor. Peripherals: ${data.equip_peripherals.toUpperCase()}.\n\n*If this requires ordering new hardware, please forward this portion of the request to sales.*\n\n`;
+    } else {
+      stellarBody += 'They will NOT need any equipment purchased or provisioned for them at this time.\n\n';
+    }
+    stellarBody += `(CC: Suzann Ghekas, HR, ${data.manager_email}, Accounting@freightservices.net)\n*Please direct people to add Accounting@freightservices.net to anything with an invoice.*`;
+    document.getElementById('preview_stellar').innerText = stellarBody;
+
+    if (data.needs_did === 'yes') {
+      document.getElementById('preview_compass_container').style.display = 'block';
+      let compassBody = `To: douglas.tenhagen@compassmsp.com\nCC: stephen.gorski@compassmsp.com, cara.borian@blackpoint-it.com\nSubject: FSI New DID Request - ${data.location}\n\nFreight Services Inc is requesting a new DID with the preferred area code (${data.area_code}).\n\nThis will be for our ${data.location} location and the employee ${fullName} (${data.generated_email}).\n\nThey will need an x2 line of service.\nThey ${data.needs_physical_phone === 'yes' ? 'WILL' : 'WILL NOT'} need a new physical VOIP phone.\n\n`;
+      compassBody += `(CC: Suzann Ghekas, HR, ${data.manager_email}, Accounting@freightservices.net)\n*Please direct people to add Accounting@freightservices.net to anything with an invoice.*`;
+      document.getElementById('preview_compass').innerText = compassBody;
+    } else {
+      document.getElementById('preview_compass_container').style.display = 'none';
+    }
+  }
+
+  document.getElementById('intake-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerText = 'Dispatching...';
+
+    try {
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await fetch('/intake/process', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
       });
-    };
+      const result = await res.json();
 
-    const toggleOffboardingFields = () => {
-      const isOffboarding = eventType.value === 'offboarding';
-      offboardingSection.style.display = isOffboarding ? 'block' : 'none';
-
-      if (!isOffboarding) {
-        terminationDate.value = '';
-        immediateToggle.checked = false;
-        forwardingEmail.value = '';
+      const resDiv = document.getElementById('submission_result');
+      resDiv.style.display = 'block';
+      if (res.ok) {
+        resDiv.className = 'alert alert-success mt-3';
+        resDiv.innerText = 'Success! Intake submitted and dispatches triggered.';
+      } else {
+        resDiv.className = 'alert alert-danger mt-3';
+        resDiv.innerText = `Error: ${result.message}`;
       }
-    };
-
-    const renderTaskPreview = (actions) => {
-      tasksList.innerHTML = '';
-      if (!Array.isArray(actions) || actions.length === 0) {
-        tasksStatus.textContent = 'No vendor tasks are expected for this selection.';
-        return;
-      }
-
-      tasksStatus.textContent = `${actions.length} expected vendor task${actions.length === 1 ? '' : 's'}:`;
-      actions.forEach((item) => {
-        const listItem = document.createElement('li');
-        listItem.textContent = `${item.vendor}: ${item.action}`;
-        tasksList.appendChild(listItem);
-      });
-    };
-
-    const fetchAndRenderPreview = async () => {
-      tasksStatus.textContent = 'Loading expected vendor tasks...';
-      const payload = getPayload();
-      payload.employee_name = `${payload.first_name || ''} ${payload.last_name || ''}`.trim();
-
-      try {
-        const response = await fetch('/preview-actions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        const data = await response.json();
-        renderTaskPreview(data.actions);
-      } catch (error) {
-        tasksList.innerHTML = '';
-        tasksStatus.textContent = 'Unable to load expected vendor tasks right now. Please try again.';
-      }
-    };
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Processing...';
-
-      try {
-        const response = await fetch('/process', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(getPayload()),
-        });
-
-        result.textContent = JSON.stringify(await response.json(), null, 2);
-      } catch (error) {
-        result.textContent = JSON.stringify({ status: 'error', message: 'Unable to process lifecycle event.' }, null, 2);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit For Approval';
-      }
-    });
-
-    document.getElementById('first_name').addEventListener('input', fetchAndRenderPreview);
-    document.getElementById('last_name').addEventListener('input', fetchAndRenderPreview);
-    roleProfile.addEventListener('change', () => {
-      toggleDriverAssets();
-      fetchAndRenderPreview();
-    });
-    eventType.addEventListener('change', () => {
-      toggleOffboardingFields();
-      fetchAndRenderPreview();
-    });
-    driverAssetsSection.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-      checkbox.addEventListener('change', fetchAndRenderPreview);
-    });
-    toggleDriverAssets();
-    toggleOffboardingFields();
-    fetchAndRenderPreview();
-  </script>
+    } catch (err) {
+      alert('Network error during dispatch.');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Confirm & Send Dispatches';
+    }
+  });
+</script>
 {% endblock %}
