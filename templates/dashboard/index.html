@@ -6,6 +6,12 @@
   <section class="fsi-container">
     <h1 class="fsi-display">Lifecycle Dashboard</h1>
     <p class="lead">Central view of onboarding and offboarding intake pipeline activity.</p>
+    {% if metrics.db_issue %}
+      <div class="alert alert-warning" role="alert">
+        Dashboard data is temporarily unavailable. Verify DATABASE_URL and run migrations with
+        <code>flask db upgrade</code> (or <code>alembic upgrade head</code>).
+      </div>
+    {% endif %}
 
     <div class="help-grid mb-3">
       <article class="card">
