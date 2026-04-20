@@ -1,8 +1,14 @@
 """Dashboard service functions for lifecycle pipeline visibility."""
 
+import logging
+
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import IntakeRequest, db
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_dashboard_metrics() -> dict:
@@ -16,15 +22,17 @@ def get_dashboard_metrics() -> dict:
 
         status_counts = {status: count for status, count in status_rows}
         recent_activity = IntakeRequest.query.order_by(IntakeRequest.id.desc()).limit(10).all()
-        db_issue = None
-    except Exception as exc:  # dashboard should degrade gracefully instead of returning HTTP 500
-        db.session.rollback()
-        db_issue = str(exc)
-        status_counts = {}
-        recent_activity = []
 
-    return {
-        "status_counts": status_counts,
-        "recent_activity": recent_activity,
-        "db_issue": db_issue,
-    }
+        return {
+            "status_counts": status_counts,
+            "recent_activity": recent_activity,
+            "error": False,
+        }
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        logger.error("Dashboard metrics query failed: %s", exc)
+        return {
+            "status_counts": {},
+            "recent_activity": [],
+            "error": True,
+        }

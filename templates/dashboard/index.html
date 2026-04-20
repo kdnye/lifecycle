@@ -6,88 +6,89 @@
   <section class="fsi-container">
     <h1 class="fsi-display">Lifecycle Dashboard</h1>
     <p class="lead">Central view of onboarding and offboarding intake pipeline activity.</p>
-    {% if metrics.db_issue %}
+
+    {% if metrics.error %}
       <div class="alert alert-warning" role="alert">
         Dashboard data is temporarily unavailable. Verify DATABASE_URL and run migrations with
         <code>flask db upgrade</code> (or <code>alembic upgrade head</code>).
       </div>
-    {% endif %}
-
-    <div class="help-grid mb-3">
-      <article class="card">
-        <div class="card-body">
-          <p class="h5">Pending Approvals</p>
-          <p>{{ metrics.status_counts.get('pending_approval', 0) }}</p>
-        </div>
-      </article>
-      <article class="card">
-        <div class="card-body">
-          <p class="h5">Drafts</p>
-          <p>{{ metrics.status_counts.get('draft', 0) }}</p>
-        </div>
-      </article>
-      <article class="card">
-        <div class="card-body">
-          <p class="h5">Approved</p>
-          <p>{{ metrics.status_counts.get('approved', 0) }}</p>
-        </div>
-      </article>
-      <article class="card">
-        <div class="card-body">
-          <p class="h5">Processed</p>
-          <p>{{ metrics.status_counts.get('processed', 0) }}</p>
-        </div>
-      </article>
-      <article class="card">
-        <div class="card-body">
-          <p class="h5">Rejected</p>
-          <p>{{ metrics.status_counts.get('rejected', 0) }}</p>
-        </div>
-      </article>
-    </div>
-
-    <div class="help-grid mb-3">
-      <article class="card">
-        <div class="card-body">
-          <p class="h5">Quick Actions</p>
-          <a class="btn" href="{{ url_for('intake.intake_form') }}">Create Intake Request</a>
-          <a class="btn btn-secondary" href="{{ url_for('help.index') }}">Open Help Center</a>
-        </div>
-      </article>
-    </div>
-
-    <section class="card mt-4">
-      <div class="card-body">
-        <h2 class="h5">Recent Activity</h2>
-        <div class="table-responsive">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Event Type</th>
-                <th>Role Profile</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for req in metrics.recent_activity %}
-                <tr>
-                  <td>{{ req.first_name }}</td>
-                  <td>{{ req.last_name }}</td>
-                  <td>{{ req.event_type }}</td>
-                  <td>{{ req.role_profile }}</td>
-                  <td>{{ req.status }}</td>
-                </tr>
-              {% else %}
-                <tr>
-                  <td colspan="5">No intake activity yet.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+    {% else %}
+      <div class="help-grid mb-3">
+        <article class="card">
+          <div class="card-body">
+            <p class="h5">Pending Approvals</p>
+            <p>{{ metrics.status_counts.get('pending_approval', 0) }}</p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-body">
+            <p class="h5">Drafts</p>
+            <p>{{ metrics.status_counts.get('draft', 0) }}</p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-body">
+            <p class="h5">Approved</p>
+            <p>{{ metrics.status_counts.get('approved', 0) }}</p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-body">
+            <p class="h5">Processed</p>
+            <p>{{ metrics.status_counts.get('processed', 0) }}</p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-body">
+            <p class="h5">Rejected</p>
+            <p>{{ metrics.status_counts.get('rejected', 0) }}</p>
+          </div>
+        </article>
       </div>
-    </section>
+
+      <div class="help-grid mb-3">
+        <article class="card">
+          <div class="card-body">
+            <p class="h5">Quick Actions</p>
+            <a class="btn" href="{{ url_for('intake.intake_form') }}">Create Intake Request</a>
+            <a class="btn btn-secondary" href="{{ url_for('help.index') }}">Open Help Center</a>
+          </div>
+        </article>
+      </div>
+
+      <section class="card mt-4">
+        <div class="card-body">
+          <h2 class="h5">Recent Activity</h2>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Event Type</th>
+                  <th>Role Profile</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for req in metrics.recent_activity %}
+                  <tr>
+                    <td>{{ req.first_name }}</td>
+                    <td>{{ req.last_name }}</td>
+                    <td>{{ req.event_type }}</td>
+                    <td>{{ req.role_profile }}</td>
+                    <td>{{ req.status }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="5">No intake activity yet.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    {% endif %}
   </section>
 {% endblock %}
