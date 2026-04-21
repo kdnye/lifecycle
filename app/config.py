@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from urllib.parse import quote_plus
 
 
 @dataclass(frozen=True)
@@ -17,12 +18,49 @@ class Settings:
     stellar_sales_email: str
 
 
+def _is_truthy(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _build_database_url_from_components() -> str | None:
+    db_user = os.getenv("DB_USER")
+    db_pass = os.getenv("DB_PASS")
+    db_name = os.getenv("DB_NAME")
+    instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME")
+    if not all([db_user, db_pass, db_name, instance_connection_name]):
+        return None
+
+    user = quote_plus(db_user)
+    password = quote_plus(db_pass)
+    database = quote_plus(db_name)
+    instance = instance_connection_name.strip()
+
+    return (
+        "postgresql+pg8000://"
+        f"{user}:{password}@/{database}"
+        f"?unix_sock=/cloudsql/{instance}/.s.PGSQL.5432"
+    )
+
+
+def _resolve_database_url() -> str | None:
+    return os.getenv("DATABASE_URL") or _build_database_url_from_components()
+
+
+def _resolve_production_flag() -> bool:
+    explicit_flag = os.getenv("FSI_PRODUCTION")
+    if explicit_flag is not None:
+        return _is_truthy(explicit_flag)
+
+    # Cloud Run always provides K_SERVICE; treat that as production unless explicitly overridden.
+    return bool(os.getenv("K_SERVICE"))
+
+
 def load_settings() -> Settings:
     return Settings(
         app_env=os.getenv("APP_ENV", "development"),
-        fsi_production=os.getenv("FSI_PRODUCTION", "false").lower() == "true",
+        fsi_production=_resolve_production_flag(),
         secret_key=os.getenv("SECRET_KEY"),
-        database_url=os.getenv("DATABASE_URL"),
+        database_url=_resolve_database_url(),
         postmark_server_token=os.getenv("POSTMARK_SERVER_TOKEN"),
         default_sender_email=os.getenv("DEFAULT_SENDER_EMAIL", "it-automation@freightservices.net"),
         mail_message_stream=os.getenv("MAIL_MESSAGE_STREAM", "outbound"),
@@ -43,6 +81,10 @@ def validate_production_settings(settings: Settings) -> list[str]:
             issues.append("Missing required SECRET_KEY while FSI_PRODUCTION=true.")
         if not settings.database_url:
             issues.append("Missing required DATABASE_URL while FSI_PRODUCTION=true.")
+        elif not settings.database_url.startswith(("postgresql://", "postgresql+")):
+            issues.append(
+                "DATABASE_URL must be PostgreSQL in production (expected postgresql:// or postgresql+driver://)."
+            )
         if not settings.postmark_server_token:
             issues.append("Missing required POSTMARK_SERVER_TOKEN while FSI_PRODUCTION=true.")
     return issues
