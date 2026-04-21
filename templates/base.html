@@ -1,20 +1,87 @@
 <!doctype html>
-<html lang="en">
+<html
+  lang="en"
+  data-theme="{{ g.current_user.theme if g.current_user and g.current_user.theme in ['light', 'dark'] else 'light' }}"
+>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}FSI Lifecycle{% endblock %}</title>
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap"
     />
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/fsi.css') }}" />
+    <script defer src="{{ url_for('static', filename='js/navbar.js') }}"></script>
   </head>
   <body>
-    <main>
-      {% block content %}{% endblock %}
+    <nav class="fsi-navbar">
+      <div class="fsi-container">
+        <a class="fsi-brand" href="/">FSI Lifecycle</a>
+        <div class="fsi-nav-actions">
+          <a href="/intake/new" class="fsi-primary-btn" style="text-decoration: none">New Request</a>
+          <a href="/help" aria-label="Help" class="fsi-help">?</a>
+
+          <div class="fsi-account-menu" data-account-menu>
+            {% if g.current_user %}
+            <img
+              class="fsi-nav-avatar"
+              src="{{ g.current_user.avatar_url or url_for('static', filename='img/default-avatar.svg') }}"
+              alt="Account avatar"
+            />
+            <span class="fsi-nav-user-name"
+              >{{ g.current_user.full_name or g.current_user.name or g.current_user.email }}</span
+            >
+            {% endif %}
+            <button
+              type="button"
+              class="fsi-secondary-btn"
+              id="account-menu-button"
+              aria-expanded="false"
+              aria-controls="account-menu-list"
+              aria-haspopup="menu"
+              data-account-menu-toggle
+            >
+              Account ▾
+            </button>
+            <ul
+              id="account-menu-list"
+              class="fsi-account-menu-list"
+              role="menu"
+              aria-labelledby="account-menu-button"
+              hidden
+              data-account-menu-list
+            >
+              <li role="none">
+                <a role="menuitem" href="/account/profile" tabindex="-1" data-account-menu-item>Profile</a>
+              </li>
+              <li role="none">
+                <a role="menuitem" href="/dashboard" tabindex="-1" data-account-menu-item>Dashboard</a>
+              </li>
+              <li role="none">
+                <a role="menuitem" href="/auth/logout" tabindex="-1" data-account-menu-item>Sign out</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="fsi-container {% block main_container_class %}{% endblock %}">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+      <ul class="fsi-flashes">
+        {% for category, msg in messages %}
+        <li class="fsi-flash fsi-flash-{{ category }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
     </main>
+
+    <footer class="fsi-footer">© {{ 2026 }} Freight Services Inc.</footer>
   </body>
 </html>

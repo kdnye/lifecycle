@@ -19,6 +19,17 @@ def login():
     if user is None:
         return jsonify({"status": "error", "message": "User not found."}), 404
 
+    if not user.can_manage_lifecycle:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Unauthorized. You do not have permissions to manage employee lifecycles.",
+                }
+            ),
+            403,
+        )
+
     set_authenticated_user(user)
     return jsonify({"status": "success", "message": "Logged in.", "user_id": user.id})
 

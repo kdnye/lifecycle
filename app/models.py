@@ -31,6 +31,7 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False, default="EMPLOYEE")
     employee_approved = db.Column(db.Boolean, nullable=False, default=True)
     is_active = db.Column(db.Boolean, default=True)
+    can_manage_lifecycle = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, raw_password: str) -> None:
