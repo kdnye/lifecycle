@@ -144,3 +144,112 @@ button {
   background: #fff;
   color: #1f2933;
 }
+
+.fsi-navbar {
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ec;
+  padding: 0.75rem 1rem;
+}
+
+.fsi-navbar .fsi-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fsi-brand {
+  text-decoration: none;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.fsi-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fsi-primary-btn,
+.fsi-secondary-btn {
+  width: auto;
+  margin: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #bcccdc;
+  background: #fff;
+}
+
+.fsi-primary-btn {
+  background: #1f2933;
+  color: #fff;
+  border-color: #1f2933;
+}
+
+.fsi-help {
+  text-decoration: none;
+  border: 1px solid #bcccdc;
+  border-radius: 999px;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f2933;
+}
+
+.fsi-account-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.fsi-nav-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+}
+
+.fsi-nav-user-name {
+  font-size: 0.9rem;
+}
+
+.fsi-account-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  min-width: 180px;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.fsi-account-menu-list a {
+  display: block;
+  padding: 0.45rem 0.5rem;
+  color: #1f2933;
+  text-decoration: none;
+}
+
+.fsi-flashes {
+  list-style: none;
+  padding: 0;
+}
+
+.fsi-flash {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  margin-bottom: 0.65rem;
+}
+
+.fsi-footer {
+  padding: 1rem;
+  text-align: center;
+  color: #52606d;
+}
