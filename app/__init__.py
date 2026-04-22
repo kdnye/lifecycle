@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask
+from flask import Flask, jsonify, request
 
 from app.config import load_settings, validate_production_settings
 from app.auth_utils import attach_current_user
@@ -17,9 +17,7 @@ def create_app() -> Flask:
     app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), "..", "templates"))
 
     settings = load_settings()
-    production_errors = validate_production_settings(settings)
-    if production_errors:
-        raise RuntimeError(" | ".join(production_errors))
+    startup_issues = validate_production_settings(settings)
 
     app.config.update(
         SECRET_KEY=settings.secret_key or "dev-only-key",
@@ -32,10 +30,31 @@ def create_app() -> Flask:
         FSI_OPS_EMAIL=settings.fsi_ops_email,
         STELLAR_SUPPORT_EMAIL=settings.stellar_support_email,
         STELLAR_SALES_EMAIL=settings.stellar_sales_email,
+        STARTUP_ISSUES=startup_issues,
     )
 
     db.init_app(app)
     app.before_request(attach_current_user)
+
+    @app.before_request
+    def enforce_maintenance_mode():
+        issues: list[str] = app.config.get("STARTUP_ISSUES", [])
+        if not issues:
+            return None
+
+        if request.path in {"/healthz", "/readyz"}:
+            return None
+
+        return (
+            jsonify(
+                {
+                    "status": "maintenance",
+                    "guidance": "Application configuration is invalid. Resolve startup issues and redeploy.",
+                    "issues": issues,
+                }
+            ),
+            503,
+        )
 
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
