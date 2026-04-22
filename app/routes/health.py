@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, current_app, jsonify
 from sqlalchemy import inspect
 
 from app.models import (
@@ -15,11 +15,37 @@ health_bp = Blueprint("health", __name__)
 
 @health_bp.get("/healthz")
 def healthz():
+    startup_issues: list[str] = current_app.config.get("STARTUP_ISSUES", [])
+    if startup_issues:
+        return (
+            jsonify(
+                {
+                    "status": "unready",
+                    "guidance": "Fix production configuration issues before serving traffic.",
+                    "issues": startup_issues,
+                }
+            ),
+            503,
+        )
+
     return jsonify({"status": "ok"}), 200
 
 
 @health_bp.get("/readyz")
 def readyz():
+    startup_issues: list[str] = current_app.config.get("STARTUP_ISSUES", [])
+    if startup_issues:
+        return (
+            jsonify(
+                {
+                    "status": "unready",
+                    "guidance": "Fix production configuration issues before serving traffic.",
+                    "issues": startup_issues,
+                }
+            ),
+            503,
+        )
+
     required_tables = [
         ROLE_MATRIX_TABLE,
         QUESTION_MATRIX_TABLE,
