@@ -35,3 +35,19 @@ def test_create_app_serves_requests_when_config_valid(monkeypatch):
     health_response = client.get("/healthz")
     assert health_response.status_code == 200
     assert health_response.get_json()["status"] == "ok"
+
+
+def test_create_app_uses_maintenance_mode_when_database_url_is_malformed(monkeypatch):
+    monkeypatch.setenv("FSI_PRODUCTION", "true")
+    monkeypatch.setenv("SECRET_KEY", "secret")
+    monkeypatch.setenv("POSTMARK_SERVER_TOKEN", "token")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost:abc/db")
+
+    app = create_app()
+    client = app.test_client()
+
+    index_response = client.get("/")
+    assert index_response.status_code == 503
+    payload = index_response.get_json()
+    assert payload["status"] == "maintenance"
+    assert any("DATABASE_URL is malformed" in issue for issue in payload["issues"])

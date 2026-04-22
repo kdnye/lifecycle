@@ -56,3 +56,15 @@ def test_validate_production_settings_requires_postgres_database_url(monkeypatch
         "DATABASE_URL must be PostgreSQL in production (expected postgresql:// or postgresql+driver://)."
         in issues
     )
+
+
+def test_validate_production_settings_rejects_malformed_database_url(monkeypatch):
+    monkeypatch.setenv("FSI_PRODUCTION", "true")
+    monkeypatch.setenv("SECRET_KEY", "secret")
+    monkeypatch.setenv("POSTMARK_SERVER_TOKEN", "token")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost:abc/db")
+
+    settings = load_settings()
+    issues = validate_production_settings(settings)
+
+    assert "DATABASE_URL is malformed and could not be parsed by SQLAlchemy." in issues
