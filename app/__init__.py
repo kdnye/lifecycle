@@ -18,10 +18,15 @@ def create_app() -> Flask:
 
     settings = load_settings()
     startup_issues = validate_production_settings(settings)
+    database_startup_issue = any("DATABASE_URL" in issue for issue in startup_issues)
+    effective_database_uri = settings.database_url or "sqlite:///lifecycle.db"
+    if database_startup_issue:
+        # Keep the process bootable so /healthz and /readyz can return actionable guidance.
+        effective_database_uri = "sqlite:///lifecycle-maintenance.db"
 
     app.config.update(
         SECRET_KEY=settings.secret_key or "dev-only-key",
-        SQLALCHEMY_DATABASE_URI=settings.database_url or "sqlite:///lifecycle.db",
+        SQLALCHEMY_DATABASE_URI=effective_database_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         POSTMARK_SERVER_TOKEN=settings.postmark_server_token,
         DEFAULT_SENDER_EMAIL=settings.default_sender_email,

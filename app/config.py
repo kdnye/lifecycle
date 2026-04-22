@@ -2,6 +2,9 @@ import os
 from dataclasses import dataclass
 from urllib.parse import quote_plus
 
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -85,6 +88,11 @@ def validate_production_settings(settings: Settings) -> list[str]:
             issues.append(
                 "DATABASE_URL must be PostgreSQL in production (expected postgresql:// or postgresql+driver://)."
             )
+        else:
+            try:
+                make_url(settings.database_url)
+            except (ArgumentError, ValueError):
+                issues.append("DATABASE_URL is malformed and could not be parsed by SQLAlchemy.")
         if not settings.postmark_server_token:
             issues.append("Missing required POSTMARK_SERVER_TOKEN while FSI_PRODUCTION=true.")
     return issues
