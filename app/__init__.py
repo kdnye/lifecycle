@@ -24,10 +24,18 @@ def create_app() -> Flask:
         # Keep the process bootable so /healthz and /readyz can return actionable guidance.
         effective_database_uri = "sqlite:///lifecycle-maintenance.db"
 
+    engine_options = {"pool_pre_ping": True}
+    if effective_database_uri.startswith("postgresql+pg8000://"):
+        engine_options["connect_args"] = {"timeout": 3}
+    elif effective_database_uri.startswith("postgresql://"):
+        # Keep postgres drivers fail-fast during readiness checks.
+        engine_options["connect_args"] = {"connect_timeout": 3}
+
     app.config.update(
         SECRET_KEY=settings.secret_key or "dev-only-key",
         SQLALCHEMY_DATABASE_URI=effective_database_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS=engine_options,
         POSTMARK_SERVER_TOKEN=settings.postmark_server_token,
         DEFAULT_SENDER_EMAIL=settings.default_sender_email,
         MAIL_MESSAGE_STREAM=settings.mail_message_stream,
