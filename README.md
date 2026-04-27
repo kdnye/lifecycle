@@ -180,6 +180,7 @@ wsgi.py          # Production entrypoint
 - `APP_ENV`
 - `FSI_PRODUCTION`
 - `DATABASE_URL`
+- `INSTANCE_CONNECTION_NAME` (Cloud Run/Unix socket path source)
 - `SECRET_KEY`
 - `POSTMARK_SERVER_TOKEN`
 - `DEFAULT_SENDER_EMAIL`
@@ -188,6 +189,19 @@ wsgi.py          # Production entrypoint
 - `FSI_OPS_EMAIL`
 - `STELLAR_SUPPORT_EMAIL`
 - `STELLAR_SALES_EMAIL`
+
+### Cloud SQL wiring (production)
+
+For this deployment, the Cloud SQL instance must be:
+
+- `quote-tool-483716:us-central1:quote-postgre`
+
+Ensure both of these are set during deploy:
+
+1. Cloud Run instance attachment: `--add-cloudsql-instances=quote-tool-483716:us-central1:quote-postgre`
+2. Runtime env var: `INSTANCE_CONNECTION_NAME=quote-tool-483716:us-central1:quote-postgre`
+
+If either is mismatched (for example using `quotetool-postgres-instance`), routes that query the database can return 500 errors due to unreachable Unix socket paths.
 
 ### Notification routing notes
 

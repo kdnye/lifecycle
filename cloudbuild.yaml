@@ -15,5 +15,28 @@ steps:
     id: 'build-image'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/lifecycle:$COMMIT_SHA', '.']
 
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-cloud-run'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/lifecycle:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--add-cloudsql-instances'
+      - '${_INSTANCE_CONNECTION_NAME}'
+      - '--set-env-vars'
+      - 'INSTANCE_CONNECTION_NAME=${_INSTANCE_CONNECTION_NAME}'
+
 images:
   - 'gcr.io/$PROJECT_ID/lifecycle:$COMMIT_SHA'
+
+substitutions:
+  _SERVICE_NAME: 'employeelifecycle'
+  _REGION: 'us-central1'
+  _INSTANCE_CONNECTION_NAME: 'quote-tool-483716:us-central1:quote-postgre'

@@ -5,6 +5,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import create_app
 from app.models import CommunicationOptions, db
+from services.communication_options import get_communication_options
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def test_communication_options_page_renders_with_defaults():
@@ -48,3 +50,26 @@ def test_communication_options_save_persists_values():
         assert options.it_sales_email == 'sales@example.com'
         assert options.telecon_sales_email == 'telecon@example.com'
         assert options.internal_notification_list == 'ops@example.com,hr@example.com'
+
+
+def test_get_communication_options_handles_sqlalchemy_errors(monkeypatch):
+    app = create_app()
+
+    with app.app_context():
+        db.create_all()
+
+        class FailingQuery:
+            @staticmethod
+            def first():
+                raise SQLAlchemyError("db down")
+
+        monkeypatch.setattr(
+            "services.communication_options.CommunicationOptions.query",
+            FailingQuery(),
+            raising=False,
+        )
+
+        options = get_communication_options()
+
+    assert options.it_support_email
+    assert options.it_sales_email
