@@ -213,6 +213,7 @@ Rollout timing in Cloud Build / Cloud Run:
 - `INSTANCE_CONNECTION_NAME` (Cloud Run/Unix socket path source)
 - `SECRET_KEY`
 - `POSTMARK_SERVER_TOKEN`
+- `POSTMARK_WEBHOOK_TOKEN`
 - `DEFAULT_SENDER_EMAIL`
 - `MAIL_MESSAGE_STREAM`
 - `HR_CC_EMAILS`
@@ -220,6 +221,12 @@ Rollout timing in Cloud Build / Cloud Run:
 - `STELLAR_SUPPORT_EMAIL`
 - `STELLAR_SALES_EMAIL`
 - `INTERNAL_CRON_SHARED_SECRET`
+
+### Postmark inbound inventory webhook
+
+- **Endpoint:** `POST /api/webhooks/postmark-inbound`
+- **Auth Header:** `X-Postmark-Token: <POSTMARK_WEBHOOK_TOKEN>`
+- **Production behavior:** when `FSI_PRODUCTION=true`, missing webhook token configuration is treated as unauthorized (fail-closed).
 
 ### Cloud Scheduler offboarding automation (internal cron)
 
