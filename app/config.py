@@ -86,6 +86,11 @@ def validate_production_settings(settings: Settings) -> list[str]:
     if settings.fsi_production:
         if not settings.secret_key:
             issues.append("Missing required SECRET_KEY while FSI_PRODUCTION=true.")
+        if not (settings.postmark_server_token or "").strip():
+            issues.append(
+                "Missing required POSTMARK_SERVER_TOKEN while FSI_PRODUCTION=true. "
+                "Set this to the Postmark Server API token used for transactional email."
+            )
         if not settings.database_url:
             issues.append("Missing required DATABASE_URL while FSI_PRODUCTION=true.")
         elif not settings.database_url.startswith(("postgresql://", "postgresql+")):
