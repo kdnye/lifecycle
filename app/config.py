@@ -93,6 +93,4 @@ def validate_production_settings(settings: Settings) -> list[str]:
                 make_url(settings.database_url)
             except (ArgumentError, ValueError):
                 issues.append("DATABASE_URL is malformed and could not be parsed by SQLAlchemy.")
-        if not settings.postmark_server_token:
-            issues.append("Missing required POSTMARK_SERVER_TOKEN while FSI_PRODUCTION=true.")
     return issues

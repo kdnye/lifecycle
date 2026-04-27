@@ -68,3 +68,15 @@ def test_validate_production_settings_rejects_malformed_database_url(monkeypatch
     issues = validate_production_settings(settings)
 
     assert "DATABASE_URL is malformed and could not be parsed by SQLAlchemy." in issues
+
+
+def test_validate_production_settings_does_not_require_postmark_token_for_startup(monkeypatch):
+    monkeypatch.setenv("FSI_PRODUCTION", "true")
+    monkeypatch.setenv("SECRET_KEY", "secret")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
+    monkeypatch.delenv("POSTMARK_SERVER_TOKEN", raising=False)
+
+    settings = load_settings()
+    issues = validate_production_settings(settings)
+
+    assert issues == []
