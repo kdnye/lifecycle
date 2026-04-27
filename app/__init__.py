@@ -35,10 +35,12 @@ def create_app() -> Flask:
 
     app.config.update(
         SECRET_KEY=settings.secret_key or "dev-only-key",
+        FSI_PRODUCTION=settings.fsi_production,
         SQLALCHEMY_DATABASE_URI=effective_database_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ENGINE_OPTIONS=engine_options,
         POSTMARK_SERVER_TOKEN=settings.postmark_server_token,
+        POSTMARK_WEBHOOK_TOKEN=settings.postmark_webhook_token,
         DEFAULT_SENDER_EMAIL=settings.default_sender_email,
         MAIL_MESSAGE_STREAM=settings.mail_message_stream,
         HR_CC_EMAILS=settings.hr_cc_emails,
