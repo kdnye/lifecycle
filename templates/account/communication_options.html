@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h1 class="fsi-display">Communication Options</h1>
+    <p class="lead">Set endpoint routing addresses for lifecycle notifications and vendor ticketing.</p>
+
+    <form method="post">
+      <label for="it_support_email">IT Support Endpoint Email</label>
+      <input id="it_support_email" name="it_support_email" type="email" required value="{{ options.it_support_email }}" />
+
+      <label for="it_sales_email">IT Sales Endpoint Email</label>
+      <input id="it_sales_email" name="it_sales_email" type="email" required value="{{ options.it_sales_email }}" />
+
+      <label for="telecon_sales_email">Telecon Setup &amp; Sales Email</label>
+      <input id="telecon_sales_email" name="telecon_sales_email" type="email" required value="{{ options.telecon_sales_email }}" />
+
+      <label for="internal_notification_list">Internal Notification List (comma-separated)</label>
+      <input
+        id="internal_notification_list"
+        name="internal_notification_list"
+        type="text"
+        placeholder="hr@example.com, accounting@example.com"
+        value="{{ options.internal_notification_list }}"
+      />
+
+      <button class="fsi-primary-btn" type="submit">Save Communication Options</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

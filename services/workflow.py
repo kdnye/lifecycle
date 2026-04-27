@@ -8,6 +8,7 @@ from datetime import date
 from flask import current_app, url_for
 
 from app.models import IntakeRequest, User, db
+from services.communication_options import get_communication_options
 from services.email import send_templated_email
 
 
@@ -44,14 +45,22 @@ def _build_generated_email(first_name: str, last_name: str) -> str:
 
 
 def _build_cc_targets(manager_email: str | None) -> tuple[str, str]:
+    options = get_communication_options()
+    internal_cc_raw = options.internal_notification_list
+    internal_cc_list = [email.strip() for email in internal_cc_raw.split(",") if email.strip()]
+
     hr_cc_raw = current_app.config.get("HR_CC_EMAILS", "")
     hr_cc_list = [email.strip() for email in hr_cc_raw.split(",") if email.strip()]
-    cc_targets = list(hr_cc_list)
+
+    cc_targets: list[str] = []
+    for email in [*internal_cc_list, *hr_cc_list]:
+        if email and email not in cc_targets:
+            cc_targets.append(email)
 
     if manager_email and manager_email not in cc_targets:
         cc_targets.append(manager_email)
 
-    primary_to_email = hr_cc_list[0] if hr_cc_list else (manager_email or "")
+    primary_to_email = cc_targets[0] if cc_targets else (manager_email or "")
     return ", ".join(cc_targets), primary_to_email
 
 
@@ -106,8 +115,9 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     manager_email = (intake_request.manager_email or "").strip() or None
     ops_email = current_app.config.get("FSI_OPS_EMAIL")
-    stellar_support_email = current_app.config.get("STELLAR_SUPPORT_EMAIL")
-    stellar_sales_email = current_app.config.get("STELLAR_SALES_EMAIL")
+    communication_options = get_communication_options()
+    stellar_support_email = communication_options.it_support_email
+    stellar_sales_email = communication_options.it_sales_email
     cc_email, primary_hr_email = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
 
@@ -217,8 +227,9 @@ def _format_termination_date(termination_date: date | None, is_immediate: bool) 
 def _execute_offboarding(intake_request: IntakeRequest) -> list[str]:
     generated_email = _build_generated_email(intake_request.first_name, intake_request.last_name)
     manager_email = (intake_request.manager_email or "").strip() or None
-    stellar_support_email = current_app.config.get("STELLAR_SUPPORT_EMAIL")
-    ops_email = current_app.config.get("FSI_OPS_EMAIL")
+    communication_options = get_communication_options()
+    stellar_support_email = communication_options.it_support_email
+    ops_email = communication_options.telecon_sales_email
     cc_email, _ = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
 
