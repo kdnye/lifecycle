@@ -25,7 +25,7 @@ def approve_request(token):
     if intake_request.status != "pending_approval":
         return render_template(
             "auth/message.html",
-            message="This request has already been processed.",
+            message=f"This request is currently '{intake_request.status}' and cannot be approved again.",
             tasks=[],
         )
 
@@ -36,7 +36,7 @@ def approve_request(token):
     if result.get("status") == "processed":
         return render_template(
             "auth/message.html",
-            message=f"Success. Lifecycle event for {intake_request.first_name} is processing.",
+            message=f"Approved and processed. Lifecycle event for {intake_request.first_name} {intake_request.last_name} has been executed.",
             tasks=result.get("tasks_generated", []),
         )
 
