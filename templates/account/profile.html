@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h1 class="fsi-display">Account Profile</h1>
+    <p class="lead">Profile details are managed by the shared FSI identity system.</p>
+    <a class="btn btn-secondary" href="{{ url_for('account.communication_options') }}">Communication Options</a>
+  </div>
+</div>
+{% endblock %}

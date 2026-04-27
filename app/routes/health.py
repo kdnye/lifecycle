@@ -3,6 +3,7 @@ from sqlalchemy import inspect
 
 from app.models import (
     ACTION_MATRIX_TABLE,
+    COMMUNICATION_OPTIONS_TABLE,
     INTAKE_REQUEST_TABLE,
     QUESTION_MATRIX_TABLE,
     ROLE_MATRIX_TABLE,
@@ -52,6 +53,7 @@ def readyz():
         ACTION_MATRIX_TABLE,
         INTAKE_REQUEST_TABLE,
         USERS_TABLE,
+        COMMUNICATION_OPTIONS_TABLE,
     ]
 
     missing_tables: list[str] = []

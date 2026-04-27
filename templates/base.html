@@ -58,13 +58,16 @@
               data-account-menu-list
             >
               <li role="none">
-                <a role="menuitem" href="/account/profile" tabindex="-1" data-account-menu-item>Profile</a>
+                <a role="menuitem" href="{{ url_for('account.profile') }}" tabindex="-1" data-account-menu-item>Profile</a>
               </li>
               <li role="none">
-                <a role="menuitem" href="/dashboard" tabindex="-1" data-account-menu-item>Dashboard</a>
+                <a role="menuitem" href="{{ url_for('dashboard.index') }}" tabindex="-1" data-account-menu-item>Dashboard</a>
               </li>
               <li role="none">
-                <a role="menuitem" href="/auth/logout" tabindex="-1" data-account-menu-item>Sign out</a>
+                <a role="menuitem" href="{{ url_for('account.communication_options') }}" tabindex="-1" data-account-menu-item>Communication options</a>
+              </li>
+              <li role="none">
+                <a role="menuitem" href="{{ url_for('account.logout') }}" tabindex="-1" data-account-menu-item>Sign out</a>
               </li>
             </ul>
           </div>

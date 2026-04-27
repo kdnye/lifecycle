@@ -13,6 +13,7 @@ QUESTION_MATRIX_TABLE = "question_matrix"
 ACTION_MATRIX_TABLE = "action_matrix"
 INTAKE_REQUEST_TABLE = "intake_request"
 INVENTORY_TABLE = "inventory"
+COMMUNICATION_OPTIONS_TABLE = "communication_options"
 
 
 class User(db.Model):
@@ -94,6 +95,16 @@ class IntakeRequest(db.Model):
     termination_date = db.Column(db.Date, nullable=True)
     is_immediate = db.Column(db.Boolean, nullable=False, default=False)
     forwarding_email = db.Column(db.String(255), nullable=True)
+
+
+class CommunicationOptions(db.Model):
+    __tablename__ = COMMUNICATION_OPTIONS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    it_support_email = db.Column(db.String(255), nullable=False)
+    it_sales_email = db.Column(db.String(255), nullable=False)
+    telecon_sales_email = db.Column(db.String(255), nullable=False)
+    internal_notification_list = db.Column(db.String(1024), nullable=True)
 
 
 class Inventory(db.Model):
