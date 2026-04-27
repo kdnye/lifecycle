@@ -219,6 +219,26 @@ Rollout timing in Cloud Build / Cloud Run:
 - `FSI_OPS_EMAIL`
 - `STELLAR_SUPPORT_EMAIL`
 - `STELLAR_SALES_EMAIL`
+- `INTERNAL_CRON_SHARED_SECRET`
+
+### Cloud Scheduler offboarding automation (internal cron)
+
+Use this internal endpoint to process due offboarding records without manager interaction for approved-ready records and contractor hard-stop auto-approvals:
+
+- **Endpoint:** `POST /api/internal/cron/process-terminations`
+- **Auth Header:** `X-FSI-Internal-Secret: <secret>`
+- **Secret Source:** `INTERNAL_CRON_SHARED_SECRET` (Cloud Run env var sourced from Secret Manager)
+- **Candidate Query Scope:** `IntakeRequest.event_type = offboarding`, `termination_date = current date`
+- **Idempotency:** records in `processed` or `rejected` are skipped; non-ready statuses are skipped except contractor hard-stop auto-approval flow.
+
+Recommended Google Cloud Scheduler setup:
+
+1. Configure `INTERNAL_CRON_SHARED_SECRET` on the Cloud Run service from Secret Manager.
+2. Create a Scheduler HTTP job targeting `https://<cloud-run-url>/api/internal/cron/process-terminations`.
+3. Set method `POST`, and add header `X-FSI-Internal-Secret` with the same secret value.
+4. Set timezone to your HR operations timezone (for example `America/Chicago`) so `termination_date == today` aligns with policy.
+5. Example cron schedule for every 15 minutes during business hours:
+   - `*/15 6-20 * * 1-5`
 
 ### Cloud SQL wiring (production)
 

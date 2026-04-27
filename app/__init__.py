@@ -11,6 +11,7 @@ from app.routes.dashboard import dashboard_bp
 from app.routes.health import health_bp
 from app.routes.help import help_bp
 from app.routes.intake import intake_bp
+from app.routes.internal import internal_bp
 from app.routes.webhooks import webhooks_bp
 
 
@@ -44,6 +45,7 @@ def create_app() -> Flask:
         FSI_OPS_EMAIL=settings.fsi_ops_email,
         STELLAR_SUPPORT_EMAIL=settings.stellar_support_email,
         STELLAR_SALES_EMAIL=settings.stellar_sales_email,
+        INTERNAL_CRON_SHARED_SECRET=settings.internal_cron_shared_secret,
         STARTUP_ISSUES=startup_issues,
     )
 
@@ -74,6 +76,7 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(account_bp)
     app.register_blueprint(intake_bp)
+    app.register_blueprint(internal_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(help_bp)
     app.register_blueprint(webhooks_bp)
