@@ -37,8 +37,13 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
 
     required = ["first_name", "last_name", "start_date", "role_profile", "manager_email"]
     if not all(data.get(field) for field in required):
+        missing_fields = [field for field in required if not data.get(field)]
         return IntakeDispatchResult(
-            body={"status": "error", "message": "Missing required fields."},
+            body={
+                "status": "error",
+                "message": "Missing required fields.",
+                "remediation": f"Provide non-empty values for: {', '.join(missing_fields)} and resubmit the intake request.",
+            },
             status_code=400,
         )
 
@@ -46,7 +51,11 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
         datetime.strptime(str(data.get("start_date")), "%Y-%m-%d").date()
     except ValueError:
         return IntakeDispatchResult(
-            body={"status": "error", "message": "Invalid date format."},
+            body={
+                "status": "error",
+                "message": "Invalid date format.",
+                "remediation": "Use ISO date format YYYY-MM-DD for start_date (example: 2026-05-01), then resubmit.",
+            },
             status_code=400,
         )
 
@@ -74,7 +83,11 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
     except Exception:
         db.session.rollback()
         return IntakeDispatchResult(
-            body={"status": "error", "message": "Unable to create intake request."},
+            body={
+                "status": "error",
+                "message": "Unable to create intake request.",
+                "remediation": "Verify database connectivity and schema migrations are up to date, then retry submission.",
+            },
             status_code=500,
         )
 
@@ -84,6 +97,10 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
             body={
                 "status": "error",
                 "message": approval_result.get("message", "Unable to route approval request."),
+                "remediation": approval_result.get(
+                    "remediation",
+                    "Confirm Postmark and approval-routing configuration, then retry lifecycle initiation.",
+                ),
             },
             status_code=500,
         )

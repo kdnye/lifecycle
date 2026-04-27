@@ -68,7 +68,12 @@ def initiate_lifecycle_event(intake_id: int) -> dict[str, str | int]:
     """Phase 1: Hold execution and request manager approval."""
     intake_request = db.session.get(IntakeRequest, intake_id)
     if not intake_request:
-        return {"status": "error", "message": "Request not found.", "intake_id": intake_id}
+        return {
+            "status": "error",
+            "message": "Request not found.",
+            "remediation": f"Confirm intake_id={intake_id} exists before initiating approval.",
+            "intake_id": intake_id,
+        }
 
     manager_email = (intake_request.manager_email or "").strip() or None
     _, primary_hr_email = _build_cc_targets(manager_email)
@@ -78,6 +83,7 @@ def initiate_lifecycle_event(intake_id: int) -> dict[str, str | int]:
         return {
             "status": "error",
             "message": "Unable to route approval email. Configure HR_CC_EMAILS or manager email.",
+            "remediation": "Set a valid manager_email on the intake request or configure HR_CC_EMAILS, then retry.",
             "intake_id": intake_id,
         }
 
@@ -99,6 +105,7 @@ def initiate_lifecycle_event(intake_id: int) -> dict[str, str | int]:
         return {
             "status": "error",
             "message": "Failed to send manager approval email via Postmark.",
+            "remediation": "Verify POSTMARK_SERVER_TOKEN, DEFAULT_SENDER_EMAIL, and template alias 'manager-approval-required', then retry.",
             "intake_id": intake_id,
         }
 
@@ -189,7 +196,10 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
         },
     )
     if not email_sent:
-        raise RuntimeError("Failed to notify Stellar Support via Postmark.")
+        raise RuntimeError(
+            "Failed to notify Stellar Support via Postmark. Remediation: verify Postmark credentials, "
+            "recipient configuration, and template alias 'new-user-account'."
+        )
 
     tasks_triggered.append("Stellar Support: Account Creation")
 
@@ -210,7 +220,10 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
             template_model=hardware_template_model,
         )
         if not hardware_procurement_sent:
-            raise RuntimeError("Failed to notify Stellar Sales for hardware procurement.")
+            raise RuntimeError(
+                "Failed to notify Stellar Sales for hardware procurement. Remediation: verify template alias "
+                "'hardware-procurement' and Stellar Sales destination email configuration."
+            )
         tasks_triggered.append("Stellar Sales: Hardware Procurement")
 
     return tasks_triggered
@@ -255,7 +268,10 @@ def _execute_offboarding(intake_request: IntakeRequest) -> list[str]:
         },
     )
     if not stellar_sent:
-        raise RuntimeError("Failed to notify Stellar Support for offboarding.")
+        raise RuntimeError(
+            "Failed to notify Stellar Support for offboarding. Remediation: verify template aliases "
+            "'offboarding-immediate'/'offboarding-standard' and Postmark configuration."
+        )
     tasks_triggered.append(f"Stellar Ticket: {template_alias}")
 
     if intake_request.role_profile == "driver":
@@ -279,12 +295,18 @@ def execute_lifecycle_event(intake_id: int) -> dict[str, str | int | list[str]]:
     """Phase 2: Execute workflow after manager approval."""
     intake_request = db.session.get(IntakeRequest, intake_id)
     if not intake_request:
-        return {"status": "error", "message": "Request not found.", "intake_id": intake_id}
+        return {
+            "status": "error",
+            "message": "Request not found.",
+            "remediation": f"Confirm intake_id={intake_id} exists before executing lifecycle actions.",
+            "intake_id": intake_id,
+        }
 
     if intake_request.status != "approved":
         return {
             "status": "error",
             "message": "Event not approved for execution.",
+            "remediation": "Approve the request from /intake/approve/<token> before executing lifecycle actions.",
             "intake_id": intake_id,
         }
 
@@ -297,6 +319,7 @@ def execute_lifecycle_event(intake_id: int) -> dict[str, str | int | list[str]]:
             return {
                 "status": "error",
                 "message": f"Unsupported event_type '{intake_request.event_type}'.",
+                "remediation": "Use event_type 'onboarding' or 'offboarding' for lifecycle execution.",
                 "intake_id": intake_id,
             }
 
@@ -306,4 +329,9 @@ def execute_lifecycle_event(intake_id: int) -> dict[str, str | int | list[str]]:
     except Exception as exc:
         db.session.rollback()
         current_app.logger.exception("Lifecycle execution failed for intake %s", intake_id)
-        return {"status": "error", "message": str(exc), "intake_id": intake_id}
+        return {
+            "status": "error",
+            "message": str(exc),
+            "remediation": "Check application logs for stack trace details, resolve configuration/data issues, then retry execution.",
+            "intake_id": intake_id,
+        }

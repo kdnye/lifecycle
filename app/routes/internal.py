@@ -26,6 +26,7 @@ def process_terminations_cron():
                 {
                     "status": "error",
                     "message": "INTERNAL_CRON_SHARED_SECRET is not configured.",
+                    "remediation": "Set INTERNAL_CRON_SHARED_SECRET in environment/config before invoking this endpoint.",
                 }
             ),
             503,
@@ -33,7 +34,16 @@ def process_terminations_cron():
 
     provided_secret = request.headers.get(_INTERNAL_SECRET_HEADER)
     if not _is_authorized(shared_secret, provided_secret):
-        return jsonify({"status": "error", "message": "Unauthorized."}), 401
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Unauthorized.",
+                    "remediation": "Provide header X-FSI-Internal-Secret with the configured shared secret.",
+                }
+            ),
+            401,
+        )
 
     result = process_due_terminations()
     return jsonify(result), 200

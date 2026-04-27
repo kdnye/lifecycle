@@ -45,10 +45,26 @@ def inbound_postmark():
             "webhook_auth_missing_configuration",
             extra={"route": "/api/webhooks/postmark-inbound"},
         )
-        return jsonify({"error": "unauthorized webhook"}), 401
+        return (
+            jsonify(
+                {
+                    "error": "unauthorized webhook",
+                    "remediation": "Configure POSTMARK_WEBHOOK_TOKEN for production and resend the webhook.",
+                }
+            ),
+            401,
+        )
 
     if configured_token and incoming_token != configured_token:
-        return jsonify({"error": "unauthorized webhook"}), 401
+        return (
+            jsonify(
+                {
+                    "error": "unauthorized webhook",
+                    "remediation": "Send header X-Postmark-Token matching POSTMARK_WEBHOOK_TOKEN.",
+                }
+            ),
+            401,
+        )
 
     payload = request.get_json(silent=True) or {}
     text_body = payload.get("TextBody", "")
@@ -92,9 +108,25 @@ def inbound_postmark():
         db.session.rollback()
         if "unique" in str(exc).lower() and "serial" in str(exc).lower():
             return jsonify({"status": "processed"}), 200
-        return jsonify({"error": "invalid inventory payload"}), 400
+        return (
+            jsonify(
+                {
+                    "error": "invalid inventory payload",
+                    "remediation": "Validate inbound serial/device fields and RequestID mapping, then retry with corrected payload.",
+                }
+            ),
+            400,
+        )
     except SQLAlchemyError:
         db.session.rollback()
-        return jsonify({"error": "database error"}), 500
+        return (
+            jsonify(
+                {
+                    "error": "database error",
+                    "remediation": "Verify database availability and run pending migrations, then retry webhook delivery.",
+                }
+            ),
+            500,
+        )
 
     return jsonify({"status": "processed"}), 200
