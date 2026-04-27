@@ -113,7 +113,7 @@
 
     <div id="step-5" class="wizard-step" style="display: none;">
       <h3 class="h5 border-bottom pb-2">5. Dispatch Preview</h3>
-      <p class="text-muted small">The following routing will occur upon submission. Required parties (Manager, HR, Suzann, Accounting) will be CC'd automatically.</p>
+      <p class="text-muted small">After submission, this request enters manager approval. Dispatches are only triggered after approval.</p>
 
       <div class="card mb-3">
         <div class="card-header bg-dark text-white">IT / System Provisioning (Stellar)</div>
@@ -128,7 +128,7 @@
       <div id="submission_result" class="alert mt-3" style="display:none;"></div>
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(4)">Back to Edit</button>
-      <button type="submit" id="submit-btn" class="btn btn-success mt-3">Confirm &amp; Send Dispatches</button>
+      <button type="submit" id="submit-btn" class="btn btn-success mt-3">Submit for Approval</button>
     </div>
   </form>
 </div>
@@ -185,7 +185,7 @@
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
-    btn.innerText = 'Dispatching...';
+    btn.innerText = 'Submitting...';
 
     try {
       const payload = Object.fromEntries(new FormData(e.target).entries());
@@ -200,7 +200,7 @@
       resDiv.style.display = 'block';
       if (res.ok) {
         resDiv.className = 'alert alert-success mt-3';
-        resDiv.innerText = 'Success! Intake submitted and dispatches triggered.';
+        resDiv.innerText = 'Submitted successfully. Status: pending approval. Dispatches will run after approval.';
       } else {
         resDiv.className = 'alert alert-danger mt-3';
         resDiv.innerText = `Error: ${result.message}`;
@@ -209,7 +209,7 @@
       alert('Network error during dispatch.');
     } finally {
       btn.disabled = false;
-      btn.innerText = 'Confirm & Send Dispatches';
+      btn.innerText = 'Submit for Approval';
     }
   });
 </script>

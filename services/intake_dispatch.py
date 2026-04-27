@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.models import IntakeRequest, db
-from services.mail import send_transactional_mail_async
+from services.workflow import initiate_lifecycle_event
 
 TRUTHY_VALUES = {"1", "true", "on", "yes"}
 
@@ -27,6 +27,8 @@ def _normalize(payload: dict) -> dict:
     normalized["event_type"] = str(payload.get("event_type", "onboarding")).strip() or "onboarding"
     normalized["generated_email"] = str(payload.get("generated_email", "")).strip() or None
     normalized["location"] = str(payload.get("location", "")).strip() or None
+    raw_status = str(payload.get("status", "submitted")).strip().lower()
+    normalized["status"] = raw_status if raw_status in {"draft", "submitted"} else "submitted"
     return normalized
 
 
@@ -63,7 +65,7 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
         needs_did=_to_bool(data.get("needs_did")),
         area_code=str(data.get("area_code", "")).strip() or None,
         needs_physical_phone=_to_bool(data.get("needs_physical_phone")),
-        status="approved",
+        status=data["status"],
     )
     db.session.add(intake)
 
@@ -76,34 +78,21 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
             status_code=500,
         )
 
-    cc_list = [
-        "suzann.ghekas@freightservices.net",
-        "humanresources@freightservices.net",
-        data["manager_email"],
-        "Accounting@freightservices.net",
-    ]
-    cc_string = ",".join(email for email in cc_list if email)
-
-    send_transactional_mail_async(
-        recipient="support@stellar.tech",
-        cc=cc_string,
-        subject=f"FSI Onboarding: {intake.first_name} {intake.last_name}",
-        template_name="stellar_onboarding_dispatch",
-        template_model=data,
-        feature="lifecycle_intake",
-    )
-
-    if intake.needs_did:
-        send_transactional_mail_async(
-            recipient="douglas.tenhagen@compassmsp.com",
-            cc=f"stephen.gorski@compassmsp.com,cara.borian@blackpoint-it.com,{cc_string}",
-            subject=f"FSI New DID Request - {intake.location or 'Unknown'}",
-            template_name="compass_telecom_dispatch",
-            template_model=data,
-            feature="lifecycle_intake",
+    approval_result = initiate_lifecycle_event(intake.id)
+    if approval_result.get("status") != "pending_approval":
+        return IntakeDispatchResult(
+            body={
+                "status": "error",
+                "message": approval_result.get("message", "Unable to route approval request."),
+            },
+            status_code=500,
         )
 
     return IntakeDispatchResult(
-        body={"status": "success", "message": "Dispatches queued via Postmark."},
-        status_code=200,
+        body={
+            "status": "pending_approval",
+            "message": "Intake submitted and awaiting manager approval before dispatch.",
+            "intake_id": intake.id,
+        },
+        status_code=202,
     )
