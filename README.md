@@ -32,7 +32,12 @@ This repository documents **where the platform is today**, **where it is going**
 ### Operational reality
 
 - Core onboarding automation is live.
-- Offboarding execution is still partial: offboarding requests are currently flagged as pending in the processing flow.
+- Offboarding execution is live in `services/workflow.py` via `_execute_offboarding`.
+- Shared user deactivation is enforced by setting `User.is_active = False` for matched shared-identity users.
+- Offboarding ticketing to Stellar Support uses Postmark template aliases:
+  - `offboarding-immediate` for immediate terminations,
+  - `offboarding-standard` for scheduled/standard terminations.
+- Driver offboarding also triggers internal asset recovery notification routing via the fleet provisioning template path.
 
 ---
 
@@ -40,16 +45,15 @@ This repository documents **where the platform is today**, **where it is going**
 
 ### Planned capabilities
 
-- **Full offboarding execution**
-  - immediate revocation and disablement workflows,
-  - scheduled termination handling,
-  - mailbox forwarding/conversion policy automation.
 - **Direct ITSM/PSA API integrations**
   - migration from email-first handoff toward direct vendor API execution.
 - **Manager approval gates**
   - stateful approvals before outbound task dispatch.
 - **Microsoft Entra ID lifecycle sync**
   - deeper SSO and identity lifecycle automation.
+- **Expanded offboarding policy orchestration in active intake flow**
+  - mailbox forwarding/conversion policy enforcement across additional systems,
+  - richer step-by-step revocation visibility beyond current Postmark dispatch + shared-user deactivation.
 
 ### End-state objective
 
