@@ -58,7 +58,14 @@ def process_due_terminations(target_date: date | None = None) -> dict[str, objec
                 summary["errors"].append(
                     {
                         "intake_id": intake_request.id,
-                        "reason": result.get("message", "Execution failed."),
+                        "reason": result.get(
+                            "message",
+                            "Execution failed.",
+                        ),
+                        "remediation": result.get(
+                            "remediation",
+                            "Review lifecycle logs and intake data, resolve the issue, then rerun the cron endpoint.",
+                        ),
                     }
                 )
             continue
@@ -69,7 +76,13 @@ def process_due_terminations(target_date: date | None = None) -> dict[str, objec
                 db.session.commit()
             except Exception as exc:  # pragma: no cover - defensive DB handling
                 db.session.rollback()
-                summary["errors"].append({"intake_id": intake_request.id, "reason": str(exc)})
+                summary["errors"].append(
+                    {
+                        "intake_id": intake_request.id,
+                        "reason": str(exc),
+                        "remediation": "Resolve database commit failure and rerun /api/internal/cron/process-terminations.",
+                    }
+                )
                 continue
 
             summary["auto_approved"] += 1
@@ -81,6 +94,10 @@ def process_due_terminations(target_date: date | None = None) -> dict[str, objec
                     {
                         "intake_id": intake_request.id,
                         "reason": result.get("message", "Execution failed after auto-approval."),
+                        "remediation": result.get(
+                            "remediation",
+                            "Validate offboarding configuration for this intake, then rerun termination processing.",
+                        ),
                     }
                 )
             continue

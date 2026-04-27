@@ -13,11 +13,29 @@ def login():
     payload = request.get_json(silent=True) or {}
     email = str(payload.get("email", "")).strip().lower()
     if not email:
-        return jsonify({"status": "error", "message": "Email is required."}), 400
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Email is required.",
+                    "remediation": "Provide a valid account email in the JSON body as {\"email\": \"user@company.com\"}.",
+                }
+            ),
+            400,
+        )
 
     user = User.query.filter_by(email=email).first()
     if user is None:
-        return jsonify({"status": "error", "message": "User not found."}), 404
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "User not found.",
+                    "remediation": "Use a registered lifecycle-management account or ask an admin to provision access.",
+                }
+            ),
+            404,
+        )
 
     if not user.can_manage_lifecycle:
         return (
@@ -25,6 +43,7 @@ def login():
                 {
                     "status": "error",
                     "message": "Unauthorized. You do not have permissions to manage employee lifecycles.",
+                    "remediation": "Request can_manage_lifecycle access from an administrator, then log in again.",
                 }
             ),
             403,
@@ -44,7 +63,16 @@ def logout():
 def me():
     user = get_current_user()
     if user is None:
-        return jsonify({"status": "error", "message": "Not authenticated."}), 401
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Not authenticated.",
+                    "remediation": "Call /login with your lifecycle-management email, then retry /me.",
+                }
+            ),
+            401,
+        )
 
     return jsonify(
         {
