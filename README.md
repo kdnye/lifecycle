@@ -177,7 +177,33 @@ wsgi.py          # Production entrypoint
 
 1. Build and push container to Artifact Registry.
 2. Run blocking migrations (`flask db upgrade`).
-3. Deploy to Cloud Run with secrets mounted.
+3. Run baseline policy seed (`python scripts/seeds.py`) as a blocking step after migration.
+4. Deploy to Cloud Run with secrets mounted.
+
+### Baseline policy seed (authoritative data path)
+
+The authoritative baseline policy seed path is `scripts/seeds.py`. This script performs idempotent upserts for:
+
+- `role_matrix` baseline rows (`driver`, `office`, `manager`, `warehouse`, `contractor`)
+- `question_matrix` conditional rows (including contractor hard-stop question)
+- `action_matrix` onboarding/offboarding routing rows
+
+Run command:
+
+```bash
+python scripts/seeds.py
+```
+
+Idempotency guarantees:
+
+- Re-running the seed updates canonical rows to expected values.
+- Composite-key duplicates are deduplicated in-place.
+- No additional duplicate baseline rows are created on re-run.
+
+Rollout timing in Cloud Build / Cloud Run:
+
+- Cloud Build pipeline stage order must be: **`flask db upgrade` -> `python scripts/seeds.py` -> `gcloud run deploy`**.
+- This ensures baseline policy rows exist before the new Cloud Run revision starts receiving traffic.
 
 ### Required secrets/environment
 
