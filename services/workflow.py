@@ -185,6 +185,21 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
             if ops_notified:
                 tasks_triggered.append(f"FSI Ops: Provision Internal Assets ({len(assets_needed)} items)")
 
+    equipment_status = (intake_request.equip_status or "").strip().lower()
+    equipment_type = (intake_request.equip_type or "").strip().lower()
+    peripheral_raw = (intake_request.equip_peripherals or "").strip()
+    peripheral_map = {
+        "fsi_stock": "Use FSI stock",
+        "mouse_keyboard": "Mouse + Keyboard",
+        "wireless_laptop_peripherals": "Wireless laptop peripherals",
+        "personal": "Employee personal peripherals",
+    }
+    peripheral_labels = ", ".join(
+        peripheral_map.get(item.strip(), item.strip())
+        for item in peripheral_raw.split(",")
+        if item.strip()
+    ) or "None provided"
+
     email_sent = send_templated_email(
         to_email=stellar_support_email,
         cc_email=cc_email or None,
@@ -193,6 +208,16 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
             "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
             "requested_email": generated_email,
             "role": intake_request.role_profile,
+            "needs_equipment": intake_request.needs_equipment,
+            "equip_status": equipment_status or "not_provided",
+            "equip_type": equipment_type or "not_provided",
+            "equip_peripherals": peripheral_labels,
+            "new_equipment_sales_notice": (
+                "NEW Equipment Needs to Be Ordered. Please pass the below to sales:"
+                if intake_request.needs_equipment and equipment_status == "new"
+                else ""
+            ),
+            "stellar_ordering_scope": "Stellar only orders computers/laptops/docks. Non-compute peripherals are ordered internally.",
         },
     )
     if not email_sent:
@@ -208,6 +233,9 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
             "employee_name": f"{intake_request.first_name} {intake_request.last_name}",
             "requested_email": generated_email,
             "role": intake_request.role_profile,
+            "equip_status": equipment_status or "not_provided",
+            "equip_type": equipment_type or "not_provided",
+            "equip_peripherals": peripheral_labels,
             # Subject/body rendering stays in Postmark template configuration.
             # request_id is provided so Postmark can render:
             # "Hardware Procurement [RequestID: {{request_id}}]"

@@ -75,12 +75,27 @@
           <option value="desktop">Desktop</option>
         </select>
 
-        <label>Peripherals (Monitors/Keyboard)</label>
-        <select name="equip_peripherals" id="equip_peripherals" class="form-control mb-2">
-          <option value="fsi_stock">Use FSI Stock</option>
-          <option value="order_new">Order New</option>
-          <option value="personal">Employee using personal peripherals</option>
-        </select>
+        <label>Peripheral Needs</label>
+        <div class="form-check">
+          <input class="form-check-input equip-peripheral-option" type="checkbox" value="fsi_stock" id="equip_peripheral_fsi_stock" checked>
+          <label class="form-check-label" for="equip_peripheral_fsi_stock">Use FSI Stock</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input equip-peripheral-option" type="checkbox" value="mouse_keyboard" id="equip_peripheral_mouse_keyboard">
+          <label class="form-check-label" for="equip_peripheral_mouse_keyboard">Mouse + Keyboard</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input equip-peripheral-option" type="checkbox" value="wireless_laptop_peripherals" id="equip_peripheral_wireless">
+          <label class="form-check-label" for="equip_peripheral_wireless">Wireless peripherals for laptop (mouse/keyboard/headset)</label>
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input equip-peripheral-option" type="checkbox" value="personal" id="equip_peripheral_personal">
+          <label class="form-check-label" for="equip_peripheral_personal">Employee using personal peripherals</label>
+        </div>
+        <input type="hidden" name="equip_peripherals" id="equip_peripherals" value="fsi_stock" />
+        <small class="text-muted d-block mt-1">
+          Note: Stellar only orders computers, laptops, and docks. Other peripherals are ordered internally by Suzann, requester, or manager.
+        </small>
       </div>
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(2)">Back</button>
@@ -97,14 +112,11 @@
       </select>
 
       <div id="phone_details" style="display: none;" class="p-3 bg-light border rounded">
-        <label>Preferred Area Code</label>
+        <label>Preferred Area Code <span class="text-danger">*</span></label>
         <input type="text" id="area_code" name="area_code" class="form-control mb-2" placeholder="e.g., 520" />
-
-        <label>Require a physical VOIP phone?</label>
-        <select id="needs_physical_phone" name="needs_physical_phone" class="form-control mb-2">
-          <option value="no">No, softphone only</option>
-          <option value="yes">Yes</option>
-        </select>
+        <small class="text-muted d-block">
+          VoIP phones are ordered internally by Suzann/requester, not through Compass/Blackpoint.
+        </small>
       </div>
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(3)">Back</button>
@@ -150,11 +162,29 @@
   function toggleEquipmentLogic() {
     const display = document.getElementById('needs_equipment').value === 'yes' ? 'block' : 'none';
     document.getElementById('equipment_details').style.display = display;
+    syncPeripheralSelections();
   }
 
   function togglePhoneLogic() {
-    const display = document.getElementById('needs_did').value === 'yes' ? 'block' : 'none';
+    const needsDid = document.getElementById('needs_did').value === 'yes';
+    const display = needsDid ? 'block' : 'none';
     document.getElementById('phone_details').style.display = display;
+    document.getElementById('area_code').required = needsDid;
+  }
+
+  function syncPeripheralSelections() {
+    const selected = Array.from(document.querySelectorAll('.equip-peripheral-option:checked')).map(el => el.value);
+    document.getElementById('equip_peripherals').value = selected.join(',');
+  }
+
+  function formatPeripheralLabel(rawValue) {
+    const labels = {
+      fsi_stock: 'Use FSI stock',
+      mouse_keyboard: 'Mouse + Keyboard',
+      wireless_laptop_peripherals: 'Wireless laptop peripherals',
+      personal: 'Employee personal peripherals'
+    };
+    return labels[rawValue] || rawValue;
   }
 
   function generatePreviews() {
@@ -164,7 +194,16 @@
     let stellarBody = `To: support@stellar.tech\nSubject: FSI Onboarding: ${fullName}\n\nStellar support,\n\nWe are onboarding a new employee, ${fullName}. Their first day is ${data.start_date}.\n\nPlease create an email and user account for them using: ${data.generated_email}\n\nThis employee will be an [${data.role_profile}] employee; please use the ${data.role_profile.toUpperCase()} permissions profile.\n\n`;
 
     if (data.needs_equipment === 'yes') {
-      stellarBody += `They WILL be needing equipment. Status: ${data.equip_status.toUpperCase()}.\nRequesting: ${data.equip_type.toUpperCase()} form factor. Peripherals: ${data.equip_peripherals.toUpperCase()}.\n\n*If this requires ordering new hardware, please forward this portion of the request to sales.*\n\n`;
+      const peripheralSelections = (data.equip_peripherals || '')
+        .split(',')
+        .filter(Boolean)
+        .map(formatPeripheralLabel)
+        .join(', ') || 'None provided';
+      stellarBody += `They WILL be needing equipment. Status: ${data.equip_status.toUpperCase()}.\nRequesting: ${data.equip_type.toUpperCase()} form factor. Peripherals: ${peripheralSelections}.\n\n`;
+      if (data.equip_status === 'new') {
+        stellarBody += `NEW Equipment Needs to Be Ordered. Please pass the below to sales:\n- Employee: ${fullName}\n- Start Date: ${data.start_date}\n- Form Factor: ${data.equip_type.toUpperCase()}\n- Peripherals: ${peripheralSelections}\n\n`;
+      }
+      stellarBody += `Stellar ordering scope: computers/laptops/docks only. Non-compute peripherals are ordered internally by Suzann/requester/manager.\n\n`;
     } else {
       stellarBody += 'They will NOT need any equipment purchased or provisioned for them at this time.\n\n';
     }
@@ -173,7 +212,7 @@
 
     if (data.needs_did === 'yes') {
       document.getElementById('preview_compass_container').style.display = 'block';
-      let compassBody = `To: douglas.tenhagen@compassmsp.com\nCC: stephen.gorski@compassmsp.com, cara.borian@blackpoint-it.com\nSubject: FSI New DID Request - ${data.location}\n\nFreight Services Inc is requesting a new DID with the preferred area code (${data.area_code}).\n\nThis will be for our ${data.location} location and the employee ${fullName} (${data.generated_email}).\n\nThey will need an x2 line of service.\nThey ${data.needs_physical_phone === 'yes' ? 'WILL' : 'WILL NOT'} need a new physical VOIP phone.\n\n`;
+      let compassBody = `To: douglas.tenhagen@compassmsp.com\nCC: stephen.gorski@compassmsp.com, cara.borian@blackpoint-it.com\nSubject: FSI New DID Request - ${data.location}\n\nFreight Services Inc is requesting a new DID with the preferred area code (${data.area_code || 'not provided'}).\n\nThis will be for our ${data.location} location and the employee ${fullName} (${data.generated_email}).\n\nThey will need an x2 line of service.\nPhysical VOIP phone ordering is handled internally by Suzann/requester.\n\n`;
       compassBody += `(CC: Suzann Ghekas, HR, ${data.manager_email}, Accounting@freightservices.net)\n*Please direct people to add Accounting@freightservices.net to anything with an invoice.*`;
       document.getElementById('preview_compass').innerText = compassBody;
     } else {
@@ -212,5 +251,12 @@
       btn.innerText = 'Submit for Approval';
     }
   });
+
+  document.querySelectorAll('.equip-peripheral-option').forEach((el) => {
+    el.addEventListener('change', syncPeripheralSelections);
+  });
+  toggleEquipmentLogic();
+  togglePhoneLogic();
+  syncPeripheralSelections();
 </script>
 {% endblock %}
