@@ -16,6 +16,7 @@ class Settings:
     postmark_webhook_token: str | None
     default_sender_email: str
     mail_message_stream: str
+    postmark_onboarding_message_stream: str
     hr_cc_emails: str
     fsi_ops_email: str
     stellar_support_email: str
@@ -70,6 +71,10 @@ def load_settings() -> Settings:
         postmark_webhook_token=os.getenv("POSTMARK_WEBHOOK_TOKEN"),
         default_sender_email=os.getenv("DEFAULT_SENDER_EMAIL", "it-automation@freightservices.net"),
         mail_message_stream=os.getenv("MAIL_MESSAGE_STREAM", "outbound"),
+        postmark_onboarding_message_stream=os.getenv(
+            "POSTMARK_ONBOARDING_MESSAGE_STREAM",
+            os.getenv("MAIL_MESSAGE_STREAM", "outbound"),
+        ),
         hr_cc_emails=os.getenv(
             "HR_CC_EMAILS",
             "hr@freightservices.net, suzann.ghekas@freightservices.net",

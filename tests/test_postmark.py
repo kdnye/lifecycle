@@ -120,3 +120,23 @@ def test_send_templated_email_returns_false_on_request_exception(mock_post):
         )
 
     assert result is False
+
+
+@patch("services.email.requests.post")
+def test_send_templated_email_uses_explicit_message_stream_override(mock_post):
+    app = _make_app(MAIL_MESSAGE_STREAM="broadcast")
+    mock_response = Mock()
+    mock_response.raise_for_status.return_value = None
+    mock_post.return_value = mock_response
+
+    with app.app_context():
+        result = send_templated_email(
+            to_email="employee@example.com",
+            template_alias="welcome-template",
+            template_model={"employee_name": "Pat"},
+            message_stream="onboading",
+        )
+
+    assert result is True
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["MessageStream"] == "onboading"

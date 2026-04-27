@@ -92,3 +92,22 @@ def test_validate_production_settings_treats_blank_postmark_token_as_missing(mon
     issues = validate_production_settings(settings)
 
     assert any("POSTMARK_SERVER_TOKEN" in issue for issue in issues)
+
+
+def test_load_settings_uses_dedicated_onboarding_stream_when_set(monkeypatch):
+    monkeypatch.setenv("MAIL_MESSAGE_STREAM", "outbound")
+    monkeypatch.setenv("POSTMARK_ONBOARDING_MESSAGE_STREAM", "onboading")
+
+    settings = load_settings()
+
+    assert settings.mail_message_stream == "outbound"
+    assert settings.postmark_onboarding_message_stream == "onboading"
+
+
+def test_load_settings_onboarding_stream_falls_back_to_mail_stream(monkeypatch):
+    monkeypatch.setenv("MAIL_MESSAGE_STREAM", "broadcast")
+    monkeypatch.delenv("POSTMARK_ONBOARDING_MESSAGE_STREAM", raising=False)
+
+    settings = load_settings()
+
+    assert settings.postmark_onboarding_message_stream == "broadcast"

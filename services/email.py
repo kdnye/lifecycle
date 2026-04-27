@@ -15,11 +15,12 @@ def send_templated_email(
     template_alias: str,
     template_model: dict,
     cc_email: str | None = None,
+    message_stream: str | None = None,
 ) -> bool:
     """Send a Postmark templated transactional email."""
     server_token = current_app.config.get("POSTMARK_SERVER_TOKEN")
     sender = current_app.config.get("DEFAULT_SENDER_EMAIL")
-    message_stream = current_app.config.get("MAIL_MESSAGE_STREAM", "outbound")
+    resolved_message_stream = message_stream or current_app.config.get("MAIL_MESSAGE_STREAM", "outbound")
 
     if not server_token:
         logger.error("POSTMARK_SERVER_TOKEN is not configured.")
@@ -38,7 +39,7 @@ def send_templated_email(
         "To": to_email,
         "TemplateAlias": template_alias,
         "TemplateModel": template_model,
-        "MessageStream": message_stream,
+        "MessageStream": resolved_message_stream,
     }
     if cc_email:
         payload["Cc"] = cc_email

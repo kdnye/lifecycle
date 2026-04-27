@@ -43,6 +43,7 @@ def create_app() -> Flask:
         POSTMARK_WEBHOOK_TOKEN=settings.postmark_webhook_token,
         DEFAULT_SENDER_EMAIL=settings.default_sender_email,
         MAIL_MESSAGE_STREAM=settings.mail_message_stream,
+        POSTMARK_ONBOARDING_MESSAGE_STREAM=settings.postmark_onboarding_message_stream,
         HR_CC_EMAILS=settings.hr_cc_emails,
         FSI_OPS_EMAIL=settings.fsi_ops_email,
         STELLAR_SUPPORT_EMAIL=settings.stellar_support_email,

@@ -64,6 +64,13 @@ def _build_cc_targets(manager_email: str | None) -> tuple[str, str]:
     return ", ".join(cc_targets), primary_to_email
 
 
+def _onboarding_message_stream() -> str:
+    return current_app.config.get(
+        "POSTMARK_ONBOARDING_MESSAGE_STREAM",
+        current_app.config.get("MAIL_MESSAGE_STREAM", "outbound"),
+    )
+
+
 def initiate_lifecycle_event(intake_id: int) -> dict[str, str | int]:
     """Phase 1: Hold execution and request manager approval."""
     intake_request = db.session.get(IntakeRequest, intake_id)
@@ -100,6 +107,7 @@ def initiate_lifecycle_event(intake_id: int) -> dict[str, str | int]:
             "approve_url": approval_url,
             "reject_url": rejection_url,
         },
+        message_stream=_onboarding_message_stream() if intake_request.event_type == "onboarding" else None,
     )
     if not sent:
         return {
@@ -155,6 +163,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
                 "role": intake_request.role_profile,
                 "requested_email": generated_email,
             },
+            message_stream=_onboarding_message_stream(),
         )
         if manager_notified:
             tasks_triggered.append(f"Internal Welcome Notified: {manager_notification_to}")
@@ -181,6 +190,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
                     "assets_list": ", ".join(assets_needed),
                     "manager": manager_email or "Unassigned",
                 },
+                message_stream=_onboarding_message_stream(),
             )
             if ops_notified:
                 tasks_triggered.append(f"FSI Ops: Provision Internal Assets ({len(assets_needed)} items)")
@@ -219,6 +229,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
             ),
             "stellar_ordering_scope": "Stellar only orders computers/laptops/docks. Non-compute peripherals are ordered internally.",
         },
+        message_stream=_onboarding_message_stream(),
     )
     if not email_sent:
         raise RuntimeError(
@@ -246,6 +257,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
             cc_email=cc_email or None,
             template_alias="hardware-procurement",
             template_model=hardware_template_model,
+            message_stream=_onboarding_message_stream(),
         )
         if not hardware_procurement_sent:
             raise RuntimeError(
