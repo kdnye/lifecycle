@@ -19,6 +19,7 @@ class Settings:
     fsi_ops_email: str
     stellar_support_email: str
     stellar_sales_email: str
+    internal_cron_shared_secret: str | None
 
 
 def _is_truthy(value: str | None) -> bool:
@@ -74,6 +75,7 @@ def load_settings() -> Settings:
         fsi_ops_email=os.getenv("FSI_OPS_EMAIL", "ops@freightservices.net"),
         stellar_support_email=os.getenv("STELLAR_SUPPORT_EMAIL", "support@stellar.tech"),
         stellar_sales_email=os.getenv("STELLAR_SALES_EMAIL", "sales@stellar.tech"),
+        internal_cron_shared_secret=os.getenv("INTERNAL_CRON_SHARED_SECRET"),
     )
 
 
