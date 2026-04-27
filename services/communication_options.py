@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from flask import current_app
-from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import CommunicationOptions, db
 
@@ -29,7 +29,7 @@ def get_communication_options() -> CommunicationOptionValues:
     defaults = _defaults()
     try:
         options = CommunicationOptions.query.first()
-    except (OperationalError, ProgrammingError):
+    except SQLAlchemyError:
         return defaults
 
     if options is None:
@@ -56,7 +56,7 @@ def save_communication_options(values: CommunicationOptionValues) -> tuple[bool,
         options.internal_notification_list = values.internal_notification_list
         db.session.commit()
         return True, "Communication options saved."
-    except (OperationalError, ProgrammingError):
+    except SQLAlchemyError:
         db.session.rollback()
         return (
             False,
