@@ -22,10 +22,10 @@
   <body>
     <nav class="fsi-navbar">
       <div class="fsi-container">
-        <a class="fsi-brand" href="/">FSI Lifecycle</a>
+        <a class="fsi-brand" href="{{ url_for('dashboard.index') }}">FSI Lifecycle</a>
         <div class="fsi-nav-actions">
-          <a href="/intake/new" class="fsi-primary-btn" style="text-decoration: none">New Request</a>
-          <a href="/help" aria-label="Help" class="fsi-help">?</a>
+          <a href="{{ url_for('intake.intake_form') }}" class="fsi-primary-btn" style="text-decoration: none">New Request</a>
+          <a href="{{ url_for('help.index') }}" aria-label="Help" class="fsi-help">?</a>
 
           <div class="fsi-account-menu" data-account-menu>
             {% if g.current_user %}
