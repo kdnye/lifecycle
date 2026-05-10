@@ -228,9 +228,13 @@
 
     try {
       const payload = Object.fromEntries(new FormData(e.target).entries());
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
       const res = await fetch('/intake/process', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
         body: JSON.stringify(payload)
       });
       const result = await res.json();

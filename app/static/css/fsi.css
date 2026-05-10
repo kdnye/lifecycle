@@ -1,255 +1,243 @@
+/* ─── FSI Design Tokens ──────────────────────────────────────────────────── */
+:root {
+  --brand-primary:   #1c3564;
+  --brand-secondary: #cfac4e;
+  --brand-accent:    #005e73;
+  --brand-danger:    #c0392b;
+  --brand-success:   #27ae60;
+  --brand-warning:   #e67e22;
+
+  --font-family-display: 'Bebas Neue', system-ui, sans-serif;
+  --font-family-body:    'Roboto', system-ui, sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-pill: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+
+  --color-surface:    #ffffff;
+  --color-surface-2:  #f8fafc;
+  --color-border:     #d9e2ec;
+  --color-text:       #1f2933;
+  --color-text-muted: #52606d;
+}
+
+/* ─── Dark Mode Tokens ───────────────────────────────────────────────────── */
+[data-bs-theme='dark'],
+[data-theme='dark'] {
+  --color-surface:    #1a1f2e;
+  --color-surface-2:  #0f1119;
+  --color-border:     #2e3650;
+  --color-text:       #e8ecf0;
+  --color-text-muted: #9aa5b1;
+  --brand-secondary:  #d4b55f;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 body {
-  font-family: Roboto, system-ui, sans-serif;
-  margin: 0;
-  color: #1f2933;
-  background: #f8fafc;
+  font-family: var(--font-family-body);
 }
 
-main {
-  padding: 2rem 1rem;
-}
-
+/* ─── Typography ─────────────────────────────────────────────────────────── */
 .fsi-display {
-  font-family: 'Bebas Neue', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   letter-spacing: 0.04em;
+  color: var(--brand-primary);
 }
 
-.fsi-container {
-  max-width: 980px;
+[data-bs-theme='dark'] .fsi-display,
+[data-theme='dark'] .fsi-display {
+  color: var(--brand-secondary);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.fsi-button-primary {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #fff;
+}
+
+.fsi-button-primary:hover,
+.fsi-button-primary:focus-visible {
+  background-color: #162a50;
+  border-color: #162a50;
+  color: #fff;
+}
+
+.fsi-button-secondary {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.fsi-button-secondary:hover,
+.fsi-button-secondary:focus-visible {
+  background-color: var(--color-surface-2);
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+/* Legacy aliases kept for backward compatibility */
+.fsi-primary-btn {
+  display: inline-block;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--brand-primary);
+  border: 1px solid var(--brand-primary);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+
+.fsi-secondary-btn {
+  display: inline-block;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+
+/* ─── Badge ──────────────────────────────────────────────────────────────── */
+.fsi-badge {
+  display: inline-block;
+  padding: 0.25em 0.55em;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ─── Card ───────────────────────────────────────────────────────────────── */
+.fsi-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+/* ─── Navbar (BEM) ───────────────────────────────────────────────────────── */
+.fsi-navbar {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) 0;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  box-shadow: var(--shadow-sm);
+}
+
+.fsi-navbar__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 var(--space-5);
 }
 
-.lead {
-  font-size: 1.125rem;
-  color: #52606d;
+.fsi-navbar__brand {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
+.fsi-navbar__brand-name {
+  font-family: var(--font-family-display);
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  color: var(--brand-primary);
+  line-height: 1;
+}
+
+[data-bs-theme='dark'] .fsi-navbar__brand-name,
+[data-theme='dark'] .fsi-navbar__brand-name {
+  color: var(--brand-secondary);
+}
+
+.fsi-navbar__menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.fsi-nav-action {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+/* ─── Help / dashboard grid ──────────────────────────────────────────────── */
 .help-grid {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.card {
-  border: 1px solid #d9e2ec;
-  border-radius: 8px;
-  background: #fff;
+/* ─── Legacy container alias ─────────────────────────────────────────────── */
+.fsi-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
 }
 
-.card-body {
-  padding: 1rem;
+/* ─── Inventory Status Badges ────────────────────────────────────────────── */
+.fsi-status-badge-available { background: #d1fae5; color: #065f46; }
+.fsi-status-badge-assigned  { background: #dbeafe; color: #1e40af; }
+.fsi-status-badge-in_repair { background: #fef3c7; color: #92400e; }
+.fsi-status-badge-retired   { background: #f3f4f6; color: #374151; }
+.fsi-status-badge-lost      { background: #fee2e2; color: #991b1b; }
+
+[data-bs-theme='dark'] .fsi-status-badge-available,
+[data-theme='dark']    .fsi-status-badge-available { background: #064e3b; color: #a7f3d0; }
+
+[data-bs-theme='dark'] .fsi-status-badge-assigned,
+[data-theme='dark']    .fsi-status-badge-assigned  { background: #1e3a5f; color: #93c5fd; }
+
+[data-bs-theme='dark'] .fsi-status-badge-in_repair,
+[data-theme='dark']    .fsi-status-badge-in_repair { background: #451a03; color: #fde68a; }
+
+[data-bs-theme='dark'] .fsi-status-badge-retired,
+[data-theme='dark']    .fsi-status-badge-retired   { background: #1f2937; color: #d1d5db; }
+
+[data-bs-theme='dark'] .fsi-status-badge-lost,
+[data-theme='dark']    .fsi-status-badge-lost      { background: #450a0a; color: #fca5a5; }
+
+/* ─── Scanner Widget ─────────────────────────────────────────────────────── */
+.fsi-scanner-widget {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  margin-bottom: var(--space-4);
 }
 
-label,
-input,
-select,
-button {
-  display: block;
-  width: 100%;
-  margin-top: 0.5rem;
-}
-
-input,
-select,
-button {
-  border: 1px solid #bcccdc;
-  border-radius: 4px;
-  padding: 0.6rem;
-  font: inherit;
-}
-
-button {
-  margin-top: 1rem;
-  cursor: pointer;
-}
-
-.breadcrumb {
-  list-style: none;
-  display: flex;
-  gap: 0.5rem;
-  padding: 0;
-  margin: 0 0 1rem;
-}
-
-.breadcrumb-item + .breadcrumb-item::before {
-  content: '/';
-  margin-right: 0.5rem;
-  color: #7b8794;
-}
-
-.table-responsive {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-}
-
-.table th,
-.table td {
-  padding: 0.75rem;
-  border: 1px solid #d9e2ec;
-  text-align: left;
-}
-
-.table-striped tbody tr:nth-child(odd) {
-  background: #f0f4f8;
-}
-
-.alert {
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  border: 1px solid transparent;
-}
-
-.alert-info {
-  background: #e6f4ff;
-  border-color: #9ac9ff;
-}
-
-.alert-warning {
-  background: #fff7e6;
-  border-color: #ffcf70;
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.mb-3 {
-  margin-bottom: 1rem;
-}
-
-.h5 {
-  font-size: 1.125rem;
-  margin: 0 0 0.5rem;
-}
-
-.btn {
-  display: inline-block;
-  width: auto;
-  margin-top: 0.5rem;
-  margin-right: 0.5rem;
-  padding: 0.6rem 0.9rem;
-  border-radius: 4px;
-  border: 1px solid #1f2933;
-  background: #1f2933;
-  color: #fff;
-  text-decoration: none;
-}
-
-.btn-secondary {
-  background: #fff;
-  color: #1f2933;
-}
-
-.fsi-navbar {
-  background: #ffffff;
-  border-bottom: 1px solid #d9e2ec;
-  padding: 0.75rem 1rem;
-}
-
-.fsi-navbar .fsi-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.fsi-brand {
-  text-decoration: none;
-  font-weight: 700;
-  color: #1f2933;
-}
-
-.fsi-nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.fsi-primary-btn,
-.fsi-secondary-btn {
-  width: auto;
-  margin: 0;
-  padding: 0.45rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid #bcccdc;
-  background: #fff;
-}
-
-.fsi-primary-btn {
-  background: #1f2933;
-  color: #fff;
-  border-color: #1f2933;
-}
-
-.fsi-help {
-  text-decoration: none;
-  border: 1px solid #bcccdc;
-  border-radius: 999px;
-  width: 1.75rem;
-  height: 1.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #1f2933;
-}
-
-.fsi-account-menu {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  position: relative;
-}
-
-.fsi-nav-avatar {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-}
-
-.fsi-nav-user-name {
-  font-size: 0.9rem;
-}
-
-.fsi-account-menu-list {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.4rem);
-  list-style: none;
-  margin: 0;
-  padding: 0.5rem;
-  min-width: 180px;
-  border: 1px solid #d9e2ec;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.fsi-account-menu-list a {
-  display: block;
-  padding: 0.45rem 0.5rem;
-  color: #1f2933;
-  text-decoration: none;
-}
-
-.fsi-flashes {
-  list-style: none;
-  padding: 0;
-}
-
-.fsi-flash {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  border-radius: 8px;
-  padding: 0.65rem 0.8rem;
-  margin-bottom: 0.65rem;
-}
-
-.fsi-footer {
-  padding: 1rem;
-  text-align: center;
-  color: #52606d;
+.fsi-scanner-preview {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 0.875rem;
 }

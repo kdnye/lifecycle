@@ -8,25 +8,34 @@
     <p class="lead">Set endpoint routing addresses for lifecycle notifications and vendor ticketing.</p>
 
     <form method="post">
-      <label for="it_support_email">IT Support Endpoint Email</label>
-      <input id="it_support_email" name="it_support_email" type="email" required value="{{ options.it_support_email }}" />
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-      <label for="it_sales_email">IT Sales Endpoint Email</label>
-      <input id="it_sales_email" name="it_sales_email" type="email" required value="{{ options.it_sales_email }}" />
+      <div class="mb-3">
+        <label for="it_support_email" class="form-label">IT Support Endpoint Email</label>
+        <input id="it_support_email" name="it_support_email" type="email" required
+               class="form-control" value="{{ options.it_support_email }}" />
+      </div>
 
-      <label for="telecon_sales_email">Telecon Setup &amp; Sales Email</label>
-      <input id="telecon_sales_email" name="telecon_sales_email" type="email" required value="{{ options.telecon_sales_email }}" />
+      <div class="mb-3">
+        <label for="it_sales_email" class="form-label">IT Sales Endpoint Email</label>
+        <input id="it_sales_email" name="it_sales_email" type="email" required
+               class="form-control" value="{{ options.it_sales_email }}" />
+      </div>
 
-      <label for="internal_notification_list">Internal Notification List (comma-separated)</label>
-      <input
-        id="internal_notification_list"
-        name="internal_notification_list"
-        type="text"
-        placeholder="hr@example.com, accounting@example.com"
-        value="{{ options.internal_notification_list }}"
-      />
+      <div class="mb-3">
+        <label for="telecon_sales_email" class="form-label">Telecon Setup &amp; Sales Email</label>
+        <input id="telecon_sales_email" name="telecon_sales_email" type="email" required
+               class="form-control" value="{{ options.telecon_sales_email }}" />
+      </div>
 
-      <button class="fsi-primary-btn" type="submit">Save Communication Options</button>
+      <div class="mb-3">
+        <label for="internal_notification_list" class="form-label">Internal Notification List (comma-separated)</label>
+        <input id="internal_notification_list" name="internal_notification_list" type="text"
+               class="form-control" placeholder="hr@example.com, accounting@example.com"
+               value="{{ options.internal_notification_list }}" />
+      </div>
+
+      <button class="btn fsi-button-primary" type="submit">Save Communication Options</button>
     </form>
   </div>
 </div>
