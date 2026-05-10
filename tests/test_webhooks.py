@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import create_app
-from app.models import Inventory, db
+from app.models import AssetStatus, Inventory, db
 
 
 def _build_db_test_client():
@@ -16,7 +16,7 @@ def _build_db_test_client():
     return app.test_client(), app
 
 
-def test_postmark_webhook_accepts_authorized_request_and_normalizes_device_type(monkeypatch):
+def test_postmark_webhook_accepts_authorized_request_and_sets_available_status(monkeypatch):
     monkeypatch.setenv("POSTMARK_WEBHOOK_TOKEN", "webhook-secret")
 
     client, app = _build_db_test_client()
@@ -26,7 +26,7 @@ def test_postmark_webhook_accepts_authorized_request_and_normalizes_device_type(
         headers={"X-Postmark-Token": "webhook-secret"},
         json={
             "Subject": "Device Intake [RequestID: 42]",
-            "TextBody": "Serial Number: SN-12345\nDevice Type: notebook",
+            "TextBody": "Serial Number: SN-12345",
         },
     )
 
@@ -35,7 +35,7 @@ def test_postmark_webhook_accepts_authorized_request_and_normalizes_device_type(
         saved = Inventory.query.filter_by(serial_number="SN-12345").first()
         assert saved is not None
         assert saved.intake_request_id == 42
-        assert saved.device_type == "Laptop"
+        assert saved.status == AssetStatus.AVAILABLE
 
 
 def test_postmark_webhook_rejects_unauthorized_request(monkeypatch):
@@ -60,7 +60,7 @@ def test_postmark_webhook_ignores_payload_without_serial(monkeypatch):
     response = client.post(
         "/api/webhooks/postmark-inbound",
         headers={"X-Postmark-Token": "webhook-secret"},
-        json={"Subject": "Device Intake [RequestID: 15]", "TextBody": "Device Type: desktop"},
+        json={"Subject": "Device Intake [RequestID: 15]", "TextBody": "No serial here."},
     )
 
     assert response.status_code == 200
