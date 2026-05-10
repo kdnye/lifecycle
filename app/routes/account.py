@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from app.auth_utils import clear_authenticated_user
-from services.communication_options import (
+from app.services.communication_options import (
     CommunicationOptionValues,
     get_communication_options,
     save_communication_options,
@@ -36,6 +36,17 @@ def communication_options():
         title="Communication Options",
         options=options,
     )
+
+
+@account_bp.post("/theme")
+def set_theme():
+    """Store theme preference. Lifecycle cannot write to the users table,
+    so persistence is localStorage-only; this endpoint returns 200 for
+    compatibility with the FSI theme-toggle JS pattern."""
+    theme = request.form.get("theme", "light")
+    if theme not in ("light", "dark"):
+        return jsonify({"error": "invalid theme"}), 400
+    return jsonify({"theme": theme}), 200
 
 
 @account_bp.get("/logout")

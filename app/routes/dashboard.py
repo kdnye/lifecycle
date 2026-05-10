@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 
-from services.dashboard import get_dashboard_metrics
+from app.services.dashboard import get_dashboard_metrics
 
 
 dashboard_bp = Blueprint("dashboard", __name__)

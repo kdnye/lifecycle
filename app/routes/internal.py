@@ -4,7 +4,7 @@ import secrets
 
 from flask import Blueprint, current_app, jsonify, request
 
-from services.internal_automation import process_due_terminations
+from app.services.internal_automation import process_due_terminations
 
 
 internal_bp = Blueprint("internal", __name__, url_prefix="/api/internal")

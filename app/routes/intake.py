@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, render_template, request
 
 from app.models import IntakeRequest, db
-from services.intake_dispatch import process_intake_dispatch
-from services.workflow import execute_lifecycle_event
+from app.services.intake_dispatch import process_intake_dispatch
+from app.services.workflow import execute_lifecycle_event
 
 intake_bp = Blueprint("intake", __name__, url_prefix="/intake")
 
