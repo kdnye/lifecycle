@@ -1,3 +1,4 @@
+import enum
 from datetime import datetime
 import uuid
 
@@ -13,7 +14,16 @@ QUESTION_MATRIX_TABLE = "question_matrix"
 ACTION_MATRIX_TABLE = "action_matrix"
 INTAKE_REQUEST_TABLE = "intake_request"
 INVENTORY_TABLE = "inventory"
+ASSET_CATEGORIES_TABLE = "asset_categories"
 COMMUNICATION_OPTIONS_TABLE = "communication_options"
+
+
+class AssetStatus(str, enum.Enum):
+    AVAILABLE = "Available"
+    ASSIGNED  = "Assigned"
+    IN_REPAIR = "In_Repair"
+    RETIRED   = "Retired"
+    LOST      = "Lost"
 
 
 class User(db.Model):
@@ -75,7 +85,7 @@ class IntakeRequest(db.Model):
     first_name = db.Column(db.String(80), nullable=False)
     last_name = db.Column(db.String(80), nullable=False)
     role_profile = db.Column(db.String(64), nullable=False)
-    event_type = db.Column(db.String(32), nullable=False)  # onboarding | offboarding
+    event_type = db.Column(db.String(32), nullable=False)
     manager_email = db.Column(db.String(255), nullable=True)
     generated_email = db.Column(db.String(255), nullable=True)
     location = db.Column(db.String(255), nullable=True)
@@ -91,7 +101,9 @@ class IntakeRequest(db.Model):
     driver_needs_fuel_card = db.Column(db.Boolean, nullable=False, default=False)
     driver_needs_vehicle = db.Column(db.Boolean, nullable=False, default=False)
     status = db.Column(db.String(32), nullable=False, default="draft")
-    approval_token = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    approval_token = db.Column(
+        db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex
+    )
     termination_date = db.Column(db.Date, nullable=True)
     is_immediate = db.Column(db.Boolean, nullable=False, default=False)
     forwarding_email = db.Column(db.String(255), nullable=True)
@@ -107,11 +119,80 @@ class CommunicationOptions(db.Model):
     internal_notification_list = db.Column(db.String(1024), nullable=True)
 
 
+class AssetCategory(db.Model):
+    __tablename__ = ASSET_CATEGORIES_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    parent_category_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{ASSET_CATEGORIES_TABLE}.id"),
+        nullable=True,
+        index=True,
+    )
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    parent = db.relationship(
+        "AssetCategory",
+        remote_side="AssetCategory.id",
+        foreign_keys="[AssetCategory.parent_category_id]",
+        backref=db.backref("subcategories", lazy="select"),
+    )
+    assets = db.relationship("Inventory", back_populates="category", lazy="dynamic")
+
+
 class Inventory(db.Model):
     __tablename__ = INVENTORY_TABLE
 
     id = db.Column(db.Integer, primary_key=True)
-    serial_number = db.Column(db.String(128), nullable=False, unique=True, index=True)
-    device_type = db.Column(db.String(64), nullable=False, default="Laptop")
-    intake_request_id = db.Column(db.Integer, db.ForeignKey(f"{INTAKE_REQUEST_TABLE}.id"), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Identification
+    serial_number = db.Column(db.String(128), nullable=True, unique=True, index=True)
+    asset_tag = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    ble_tag_id = db.Column(db.String(100), nullable=True, unique=True, index=True)
+    # Classification
+    category_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{ASSET_CATEGORIES_TABLE}.id"),
+        nullable=True,
+        index=True,
+    )
+    make = db.Column(db.String(100), nullable=True)
+    model_name = db.Column(db.String(100), nullable=True)
+    # State
+    status = db.Column(
+        db.Enum(AssetStatus, name="asset_status"),
+        nullable=False,
+        default=AssetStatus.AVAILABLE,
+    )
+    assigned_to_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{USERS_TABLE}.id"),
+        nullable=True,
+        index=True,
+    )
+    # Media & notes
+    photo_url = db.Column(db.String(1024), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    # Financials
+    purchase_date = db.Column(db.Date, nullable=True)
+    purchase_price = db.Column(db.Numeric(10, 2), nullable=True)
+    warranty_expiry = db.Column(db.Date, nullable=True)
+    # Lifecycle linkage
+    intake_request_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{INTAKE_REQUEST_TABLE}.id"),
+        nullable=True,
+    )
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+    # Relationships
+    category = db.relationship("AssetCategory", back_populates="assets")
+    assigned_to = db.relationship("User", foreign_keys=[assigned_to_user_id])
+    intake_request = db.relationship("IntakeRequest")
