@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Permission Matrix · FSI Lifecycle{% endblock %}
+{% block content %}
+<h1 class="fsi-display mb-3">Permission Matrix</h1>
+
+{% for role in roles %}
+<div class="card mb-4">
+  <div class="card-header"><strong>{{ role.role_profile }}</strong></div>
+  <div class="card-body">
+    <h6>Distribution Lists</h6>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% for dl in distribution_lists %}
+      <form method="post" action="{{ url_for('permissions.toggle_assignment') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="role_id" value="{{ role.id }}">
+        <input type="hidden" name="target_id" value="{{ dl.id }}">
+        <input type="hidden" name="assignment_type" value="distribution_list">
+        <input type="hidden" name="enabled" value="{{ 0 if dl in role.distribution_lists else 1 }}">
+        <button type="submit" class="btn btn-sm {{ 'btn-success' if dl in role.distribution_lists else 'btn-outline-secondary' }}">{{ dl.name }}</button>
+      </form>
+      {% endfor %}
+    </div>
+
+    <h6>File Share Permissions</h6>
+    <div class="d-flex flex-wrap gap-2">
+      {% for share in file_shares %}
+      <form method="post" action="{{ url_for('permissions.toggle_assignment') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="role_id" value="{{ role.id }}">
+        <input type="hidden" name="target_id" value="{{ share.id }}">
+        <input type="hidden" name="assignment_type" value="file_share">
+        <input type="hidden" name="enabled" value="{{ 0 if share in role.file_share_permissions else 1 }}">
+        <button type="submit" class="btn btn-sm {{ 'btn-success' if share in role.file_share_permissions else 'btn-outline-secondary' }}">{{ share.name }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

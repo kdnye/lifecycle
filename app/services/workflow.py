@@ -10,6 +10,7 @@ from flask import current_app, url_for
 from app.models import IntakeRequest, User, db
 from app.services.communication_options import get_communication_options
 from app.services.email import send_templated_email
+from app.services.permission_service import get_role_permissions
 
 
 @dataclass(frozen=True)
@@ -135,6 +136,7 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
     stellar_sales_email = communication_options.it_sales_email
     cc_email, primary_hr_email = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
+    role_permissions = get_role_permissions(intake_request.role_profile)
 
     existing_user = User.query.filter_by(email=generated_email).first()
     if not existing_user:
@@ -228,6 +230,8 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
                 else ""
             ),
             "stellar_ordering_scope": "Stellar only orders computers/laptops/docks. Non-compute peripherals are ordered internally.",
+            "distribution_lists": role_permissions["distribution_lists"],
+            "file_share_permissions": role_permissions["file_share_permissions"],
         },
         message_stream=_onboarding_message_stream(),
     )

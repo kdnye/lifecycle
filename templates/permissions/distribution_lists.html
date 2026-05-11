@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Distribution Lists · FSI Lifecycle{% endblock %}
+{% block content %}
+<h1 class="fsi-display mb-3">Distribution Lists</h1>
+<form method="post" class="row g-2 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="col-md-3"><input class="form-control" name="name" placeholder="Name" required></div>
+  <div class="col-md-3"><input class="form-control" name="email" type="email" placeholder="Email" required></div>
+  <div class="col-md-4"><input class="form-control" name="description" placeholder="Description"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">Add</button></div>
+</form>
+<ul class="list-group">
+  {% for item in records %}
+  <li class="list-group-item d-flex justify-content-between">
+    <span><strong>{{ item.name }}</strong> — {{ item.email }}</span>
+    <span class="text-muted">{{ item.description or '' }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

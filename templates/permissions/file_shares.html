@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}File Shares · FSI Lifecycle{% endblock %}
+{% block content %}
+<h1 class="fsi-display mb-3">File Share Permissions</h1>
+<form method="post" class="row g-2 mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="col-md-3"><input class="form-control" name="name" placeholder="Name" required></div>
+  <div class="col-md-3"><input class="form-control" name="resource_path" placeholder="\\server\share" required></div>
+  <div class="col-md-2"><input class="form-control" name="access_level" placeholder="Read/Write"></div>
+  <div class="col-md-2"><input class="form-control" name="description" placeholder="Description"></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">Add</button></div>
+</form>
+<ul class="list-group">
+  {% for item in records %}
+  <li class="list-group-item d-flex justify-content-between">
+    <span><strong>{{ item.name }}</strong> — {{ item.resource_path }}</span>
+    <span class="text-muted">{{ item.access_level or '' }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
