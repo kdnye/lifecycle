@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, render_template, request
 
 from app.models import IntakeRequest, db
 from app.services.intake_dispatch import process_intake_dispatch
+from app.services.question_service import questions_by_step
 from app.services.workflow import execute_lifecycle_event
 
 intake_bp = Blueprint("intake", __name__, url_prefix="/intake")
@@ -9,7 +10,7 @@ intake_bp = Blueprint("intake", __name__, url_prefix="/intake")
 
 @intake_bp.get("/")
 def intake_form():
-    return render_template("intake/form.html")
+    return render_template("intake/form.html", step_questions=questions_by_step())
 
 
 @intake_bp.post("/process")

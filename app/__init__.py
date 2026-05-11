@@ -21,6 +21,8 @@ from app.routes.intake import intake_bp
 from app.routes.internal import internal_bp
 from app.routes.webhooks import webhooks_bp
 from app.blueprints.inventory.routes import inventory_bp
+from app.blueprints.intake_builder.routes import intake_builder_bp
+from app.blueprints.permissions.routes import permissions_bp
 
 
 csrf = CSRFProtect()
@@ -127,6 +129,9 @@ def create_app() -> Flask:
     csrf.exempt(webhooks_bp)
     csrf.exempt(internal_bp)
 
+    # Jinja2 filter: parse JSON strings from field_options column
+    app.jinja_env.filters["from_json"] = lambda s: json.loads(s) if s else []
+
     app.before_request(attach_current_user)
 
     @app.before_request
@@ -156,6 +161,8 @@ def create_app() -> Flask:
     app.register_blueprint(help_bp)
     app.register_blueprint(webhooks_bp)
     app.register_blueprint(inventory_bp, url_prefix="/inventory")
+    app.register_blueprint(intake_builder_bp, url_prefix="/intake-builder")
+    app.register_blueprint(permissions_bp, url_prefix="/permissions")
 
     def _error_response(code: int, title: str, message: str):
         if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:

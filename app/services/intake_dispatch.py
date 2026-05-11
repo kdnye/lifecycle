@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -7,6 +8,7 @@ from app.models import IntakeRequest, db
 from app.services.workflow import initiate_lifecycle_event
 
 TRUTHY_VALUES = {"1", "true", "on", "yes"}
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,14 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
             },
             status_code=500,
         )
+
+    # Persist dynamic question answers; non-fatal if it fails
+    try:
+        from app.services.question_service import list_questions, save_answers
+        active_questions = list_questions(active_only=True)
+        save_answers(intake.id, payload, active_questions)
+    except Exception:
+        log.exception("Failed to save dynamic intake answers for intake %s", intake.id)
 
     approval_result = initiate_lifecycle_event(intake.id)
     if approval_result.get("status") != "pending_approval":

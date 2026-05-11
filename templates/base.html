@@ -44,6 +44,16 @@
           <a href="{{ url_for('inventory.list_assets') }}" class="btn fsi-button-secondary fsi-nav-action">
             <i class="bi bi-box-seam"></i> Inventory
           </a>
+
+          {% if g.current_user and g.current_user.can_manage_lifecycle %}
+          <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary fsi-nav-action">
+            <i class="bi bi-sliders"></i> Builder
+          </a>
+          <a href="{{ url_for('permissions.matrix') }}" class="btn fsi-button-secondary fsi-nav-action">
+            <i class="bi bi-shield-check"></i> Permissions
+          </a>
+          {% endif %}
+
           <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
             <i class="bi bi-question-circle"></i> Help
           </a>

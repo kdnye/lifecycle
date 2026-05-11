@@ -10,6 +10,7 @@ from flask import current_app, url_for
 from app.models import IntakeRequest, User, db
 from app.services.communication_options import get_communication_options
 from app.services.email import send_templated_email
+from app.services.permission_service import get_permissions_for_role
 
 
 @dataclass(frozen=True)
@@ -136,6 +137,18 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
     cc_email, primary_hr_email = _build_cc_targets(manager_email)
     tasks_triggered: list[str] = []
 
+    # Role-based distribution lists and file shares for provisioning email
+    role_permissions = get_permissions_for_role(intake_request.role_profile)
+    dl_summary = (
+        ", ".join(dl.name for dl in role_permissions["distribution_lists"]) or "None"
+    )
+    share_summary = (
+        "; ".join(
+            f"{s.name} ({s.access_level})" for s in role_permissions["file_shares"]
+        )
+        or "None"
+    )
+
     existing_user = User.query.filter_by(email=generated_email).first()
     if not existing_user:
         new_user = User(
@@ -228,6 +241,8 @@ def _execute_onboarding(intake_request: IntakeRequest) -> list[str]:
                 else ""
             ),
             "stellar_ordering_scope": "Stellar only orders computers/laptops/docks. Non-compute peripherals are ordered internally.",
+            "distribution_lists": dl_summary,
+            "file_share_permissions": share_summary,
         },
         message_stream=_onboarding_message_stream(),
     )

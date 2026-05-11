@@ -1,6 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Employee Lifecycle Intake{% endblock %}
 
+{% macro render_dynamic_questions(questions) %}
+{% if questions %}
+<div class="mt-4 pt-3 border-top">
+  <p class="text-muted small mb-2"><i class="bi bi-chat-square-text me-1"></i>Additional Questions</p>
+  {% for q in questions %}
+  <div class="mb-3 dynamic-question" data-role="{{ q.role_profile }}"
+       {% if q.role_profile != 'all' %}style="display:none"{% endif %}>
+    <label class="form-label">
+      {{ q.prompt }}
+      {% if q.is_required %}<span class="text-danger ms-1">*</span>{% endif %}
+    </label>
+    {% if q.field_type == 'boolean' %}
+      <select name="dynamic_{{ q.question_key }}" class="form-control"
+              {% if q.is_required %}required{% endif %}>
+        <option value="">— Select —</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    {% elif q.field_type == 'select' and q.field_options %}
+      <select name="dynamic_{{ q.question_key }}" class="form-control"
+              {% if q.is_required %}required{% endif %}>
+        <option value="">— Select —</option>
+        {% for opt in q.field_options | from_json %}
+        <option value="{{ opt }}">{{ opt }}</option>
+        {% endfor %}
+      </select>
+    {% elif q.field_type == 'date' %}
+      <input type="date" name="dynamic_{{ q.question_key }}" class="form-control"
+             {% if q.is_required %}required{% endif %} />
+    {% elif q.field_type == 'textarea' %}
+      <textarea name="dynamic_{{ q.question_key }}" class="form-control" rows="2"
+                {% if q.is_required %}required{% endif %}></textarea>
+    {% elif q.field_type == 'number' %}
+      <input type="number" name="dynamic_{{ q.question_key }}" class="form-control"
+             {% if q.is_required %}required{% endif %} />
+    {% else %}
+      <input type="text" name="dynamic_{{ q.question_key }}" class="form-control"
+             {% if q.is_required %}required{% endif %} />
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <h1 class="fsi-display">Employee Lifecycle Intake</h1>
 
@@ -23,6 +68,8 @@
 
       <label for="start_date">First Day (Start Date)</label>
       <input type="date" id="start_date" name="start_date" class="form-control mb-3" required />
+
+      {{ render_dynamic_questions(step_questions.get(1, [])) }}
 
       <button type="button" class="btn btn-primary mt-3" onclick="nextStep(2)">Continue</button>
     </div>
@@ -48,6 +95,8 @@
 
       <label for="location">Primary Location (City/Branch)</label>
       <input type="text" id="location" name="location" class="form-control mb-3" required />
+
+      {{ render_dynamic_questions(step_questions.get(2, [])) }}
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(1)">Back</button>
       <button type="button" class="btn btn-primary mt-3" onclick="nextStep(3)">Continue</button>
@@ -98,6 +147,8 @@
         </small>
       </div>
 
+      {{ render_dynamic_questions(step_questions.get(3, [])) }}
+
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(2)">Back</button>
       <button type="button" class="btn btn-primary mt-3" onclick="nextStep(4)">Continue</button>
     </div>
@@ -118,6 +169,8 @@
           VoIP phones are ordered internally by Suzann/requester, not through Compass/Blackpoint.
         </small>
       </div>
+
+      {{ render_dynamic_questions(step_questions.get(4, [])) }}
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(3)">Back</button>
       <button type="button" class="btn btn-primary mt-3" onclick="generatePreviews(); nextStep(5);">Review &amp; Submit</button>
@@ -146,6 +199,14 @@
 </div>
 
 <script>
+  function applyDynamicQuestionVisibility() {
+    var role = (document.getElementById('role_profile') || {}).value || '';
+    document.querySelectorAll('.dynamic-question').forEach(function (el) {
+      var elRole = el.dataset.role;
+      el.style.display = (elRole === 'all' || elRole === role) ? '' : 'none';
+    });
+  }
+
   function nextStep(stepNumber) {
     document.querySelectorAll('.wizard-step').forEach(el => el.style.display = 'none');
     document.getElementById(`step-${stepNumber}`).style.display = 'block';
@@ -156,6 +217,10 @@
       const email = `${fn}.${ln}@freightservices.net`.replace(/\s+/g, '');
       document.getElementById('generated_email_display').innerText = email;
       document.getElementById('generated_email').value = email;
+    }
+
+    if (stepNumber >= 2) {
+      applyDynamicQuestionVisibility();
     }
   }
 
@@ -259,8 +324,15 @@
   document.querySelectorAll('.equip-peripheral-option').forEach((el) => {
     el.addEventListener('change', syncPeripheralSelections);
   });
+
+  var roleSelect = document.getElementById('role_profile');
+  if (roleSelect) {
+    roleSelect.addEventListener('change', applyDynamicQuestionVisibility);
+  }
+
   toggleEquipmentLogic();
   togglePhoneLogic();
   syncPeripheralSelections();
+  applyDynamicQuestionVisibility();
 </script>
 {% endblock %}
