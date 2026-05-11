@@ -26,4 +26,4 @@ USER appuser
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} --timeout ${GUNICORN_TIMEOUT:-120} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-8} wsgi:app"]
