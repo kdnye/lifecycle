@@ -21,6 +21,7 @@ from app.routes.intake import intake_bp
 from app.routes.internal import internal_bp
 from app.routes.webhooks import webhooks_bp
 from app.blueprints.inventory.routes import inventory_bp
+from app.blueprints.intake_builder import intake_builder_bp
 
 
 csrf = CSRFProtect()
@@ -167,6 +168,7 @@ def create_app() -> Flask:
     app.register_blueprint(help_bp)
     app.register_blueprint(webhooks_bp)
     app.register_blueprint(inventory_bp, url_prefix="/inventory")
+    app.register_blueprint(intake_builder_bp, url_prefix="/intake-builder")
 
     def _error_response(code: int, title: str, message: str):
         if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:

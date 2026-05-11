@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Question · FSI Lifecycle{% endblock %}
+
+{% block content %}
+<h1 class="fsi-display mb-3">Edit Question</h1>
+<form method="post" action="{{ url_for('intake_builder.edit_question', question_id=question.id) }}" class="row g-3">
+  <div class="col-md-4"><label class="form-label">Role Profile</label><input class="form-control" name="role_profile" value="{{ question.role_profile }}" required /></div>
+  <div class="col-md-4"><label class="form-label">Question Key</label><input class="form-control" name="question_key" value="{{ question.question_key }}" required /></div>
+  <div class="col-md-4"><label class="form-label">Field Type</label><input class="form-control" name="field_type" value="{{ question.field_type or 'text' }}" /></div>
+  <div class="col-12"><label class="form-label">Prompt</label><input class="form-control" name="prompt" value="{{ question.prompt }}" required /></div>
+  <div class="col-md-3"><label class="form-label">Intake Step</label><input type="number" class="form-control" name="intake_step" min="1" value="{{ question.intake_step }}" /></div>
+  <div class="col-md-3"><label class="form-label">Sort Order</label><input type="number" class="form-control" name="sort_order" min="0" value="{{ question.sort_order }}" /></div>
+  <div class="col-md-3"><label class="form-label">Visibility Rule</label><input class="form-control" name="visibility_rule" value="{{ question.visibility_rule }}" /></div>
+  <div class="col-md-3"><label class="form-label">Options JSON</label><input class="form-control" name="options_json" value="{{ question.options_json or '' }}" /></div>
+  <div class="col-md-6"><label class="form-label">Depends On Key</label><input class="form-control" name="depends_on_question_key" value="{{ question.depends_on_question_key or '' }}" /></div>
+  <div class="col-md-6"><label class="form-label">Depends On Value</label><input class="form-control" name="depends_on_answer_value" value="{{ question.depends_on_answer_value or '' }}" /></div>
+  <div class="col-12 form-check"><input class="form-check-input" type="checkbox" name="is_required" id="is_required" {% if question.is_required %}checked{% endif %}/><label class="form-check-label" for="is_required">Required</label></div>
+  <div class="col-12 form-check"><input class="form-check-input" type="checkbox" name="is_dynamic" id="is_dynamic" {% if question.is_dynamic %}checked{% endif %}/><label class="form-check-label" for="is_dynamic">Dynamic</label></div>
+  <div class="col-12 form-check"><input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if question.is_active %}checked{% endif %}/><label class="form-check-label" for="is_active">Active</label></div>
+  <div class="col-12 d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn btn-secondary" href="{{ url_for('intake_builder.board') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}
