@@ -24,6 +24,31 @@
       <label for="start_date">First Day (Start Date)</label>
       <input type="date" id="start_date" name="start_date" class="form-control mb-3" required />
 
+
+
+      {% for question in step_questions.get(1, []) %}
+      <div class="dynamic-question role-scope-{{ question.role_profile|lower }} mb-3" data-role="{{ question.role_profile|lower }}">
+        <label for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+        {% if question.field_type == "select" %}
+          <select id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}>
+            <option value="">Select an option</option>
+            {% for option in question.options_json|from_json %}
+              <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+          </select>
+        {% elif question.field_type == "textarea" %}
+          <textarea id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}></textarea>
+        {% elif question.field_type == "checkbox" %}
+          <div class="form-check">
+            <input type="checkbox" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-check-input" value="yes" {% if question.is_required %}required{% endif %}/>
+            <label class="form-check-label" for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+          </div>
+        {% else %}
+          <input type="text" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}/>
+        {% endif %}
+      </div>
+      {% endfor %}
+
       <button type="button" class="btn btn-primary mt-3" onclick="nextStep(2)">Continue</button>
     </div>
 
@@ -48,6 +73,31 @@
 
       <label for="location">Primary Location (City/Branch)</label>
       <input type="text" id="location" name="location" class="form-control mb-3" required />
+
+
+
+      {% for question in step_questions.get(2, []) %}
+      <div class="dynamic-question role-scope-{{ question.role_profile|lower }} mb-3" data-role="{{ question.role_profile|lower }}">
+        <label for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+        {% if question.field_type == "select" %}
+          <select id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}>
+            <option value="">Select an option</option>
+            {% for option in question.options_json|from_json %}
+              <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+          </select>
+        {% elif question.field_type == "textarea" %}
+          <textarea id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}></textarea>
+        {% elif question.field_type == "checkbox" %}
+          <div class="form-check">
+            <input type="checkbox" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-check-input" value="yes" {% if question.is_required %}required{% endif %}/>
+            <label class="form-check-label" for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+          </div>
+        {% else %}
+          <input type="text" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}/>
+        {% endif %}
+      </div>
+      {% endfor %}
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(1)">Back</button>
       <button type="button" class="btn btn-primary mt-3" onclick="nextStep(3)">Continue</button>
@@ -98,6 +148,31 @@
         </small>
       </div>
 
+
+
+      {% for question in step_questions.get(3, []) %}
+      <div class="dynamic-question role-scope-{{ question.role_profile|lower }} mb-3" data-role="{{ question.role_profile|lower }}">
+        <label for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+        {% if question.field_type == "select" %}
+          <select id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}>
+            <option value="">Select an option</option>
+            {% for option in question.options_json|from_json %}
+              <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+          </select>
+        {% elif question.field_type == "textarea" %}
+          <textarea id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}></textarea>
+        {% elif question.field_type == "checkbox" %}
+          <div class="form-check">
+            <input type="checkbox" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-check-input" value="yes" {% if question.is_required %}required{% endif %}/>
+            <label class="form-check-label" for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+          </div>
+        {% else %}
+          <input type="text" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}/>
+        {% endif %}
+      </div>
+      {% endfor %}
+
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(2)">Back</button>
       <button type="button" class="btn btn-primary mt-3" onclick="nextStep(4)">Continue</button>
     </div>
@@ -118,6 +193,31 @@
           VoIP phones are ordered internally by Suzann/requester, not through Compass/Blackpoint.
         </small>
       </div>
+
+
+
+      {% for question in step_questions.get(4, []) %}
+      <div class="dynamic-question role-scope-{{ question.role_profile|lower }} mb-3" data-role="{{ question.role_profile|lower }}">
+        <label for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+        {% if question.field_type == "select" %}
+          <select id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}>
+            <option value="">Select an option</option>
+            {% for option in question.options_json|from_json %}
+              <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+          </select>
+        {% elif question.field_type == "textarea" %}
+          <textarea id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}></textarea>
+        {% elif question.field_type == "checkbox" %}
+          <div class="form-check">
+            <input type="checkbox" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-check-input" value="yes" {% if question.is_required %}required{% endif %}/>
+            <label class="form-check-label" for="dynamic_{{ question.question_key }}">{{ question.prompt }}</label>
+          </div>
+        {% else %}
+          <input type="text" id="dynamic_{{ question.question_key }}" name="dynamic_{{ question.question_key }}" class="form-control" {% if question.is_required %}required{% endif %}/>
+        {% endif %}
+      </div>
+      {% endfor %}
 
       <button type="button" class="btn btn-secondary mt-3" onclick="nextStep(3)">Back</button>
       <button type="button" class="btn btn-primary mt-3" onclick="generatePreviews(); nextStep(5);">Review &amp; Submit</button>
@@ -163,6 +263,7 @@
     const display = document.getElementById('needs_equipment').value === 'yes' ? 'block' : 'none';
     document.getElementById('equipment_details').style.display = display;
     syncPeripheralSelections();
+    applyDynamicRoleVisibility();
   }
 
   function togglePhoneLogic() {
@@ -170,6 +271,20 @@
     const display = needsDid ? 'block' : 'none';
     document.getElementById('phone_details').style.display = display;
     document.getElementById('area_code').required = needsDid;
+  }
+
+
+
+  function applyDynamicRoleVisibility() {
+    const selectedRole = (document.getElementById('role_profile')?.value || '').toLowerCase();
+    document.querySelectorAll('.dynamic-question').forEach((el) => {
+      const scope = (el.dataset.role || 'all').toLowerCase();
+      const show = scope === 'all' || scope === selectedRole;
+      el.style.display = show ? 'block' : 'none';
+      el.querySelectorAll('input, select, textarea').forEach((field) => {
+        field.disabled = !show;
+      });
+    });
   }
 
   function syncPeripheralSelections() {
@@ -256,11 +371,14 @@
     }
   });
 
+  document.getElementById('role_profile').addEventListener('change', applyDynamicRoleVisibility);
+
   document.querySelectorAll('.equip-peripheral-option').forEach((el) => {
     el.addEventListener('change', syncPeripheralSelections);
   });
   toggleEquipmentLogic();
   togglePhoneLogic();
   syncPeripheralSelections();
+  applyDynamicRoleVisibility();
 </script>
 {% endblock %}

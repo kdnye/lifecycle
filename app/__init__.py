@@ -129,6 +129,17 @@ def create_app() -> Flask:
 
     app.before_request(attach_current_user)
 
+    @app.template_filter("from_json")
+    def from_json_filter(value):
+        if value in (None, ""):
+            return []
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except (TypeError, ValueError):
+            return []
+
+
     @app.before_request
     def enforce_maintenance_mode():
         issues: list[str] = app.config.get("STARTUP_ISSUES", [])
