@@ -59,8 +59,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("role_matrix_id", "file_share_permission_id"),
     )
 
-    op.create_index("ix_distribution_lists_email", "distribution_lists", ["email"], unique=True)
-    op.create_index("ix_file_share_permissions_resource_path", "file_share_permissions", ["resource_path"], unique=True)
     op.create_index("ix_role_distribution_lists_distribution_list_id", "role_distribution_lists", ["distribution_list_id"], unique=False)
     op.create_index("ix_role_file_share_permissions_file_share_permission_id", "role_file_share_permissions", ["file_share_permission_id"], unique=False)
 
@@ -68,8 +66,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_role_file_share_permissions_file_share_permission_id", table_name="role_file_share_permissions")
     op.drop_index("ix_role_distribution_lists_distribution_list_id", table_name="role_distribution_lists")
-    op.drop_index("ix_file_share_permissions_resource_path", table_name="file_share_permissions")
-    op.drop_index("ix_distribution_lists_email", table_name="distribution_lists")
 
     op.drop_table("role_file_share_permissions")
     op.drop_table("role_distribution_lists")

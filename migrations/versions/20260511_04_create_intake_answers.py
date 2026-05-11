@@ -29,12 +29,6 @@ def upgrade() -> None:
     )
 
     op.create_index(
-        "ix_intake_answers_intake_request_id",
-        "intake_answers",
-        ["intake_request_id"],
-        unique=False,
-    )
-    op.create_index(
         "ix_intake_answers_question_matrix_id",
         "intake_answers",
         ["question_matrix_id"],
@@ -51,5 +45,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_intake_answers_intake_question", table_name="intake_answers")
     op.drop_index("ix_intake_answers_question_matrix_id", table_name="intake_answers")
-    op.drop_index("ix_intake_answers_intake_request_id", table_name="intake_answers")
     op.drop_table("intake_answers")
