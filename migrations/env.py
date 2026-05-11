@@ -16,9 +16,14 @@ LIFECYCLE_OWNED_TABLES = {
     "question_matrix",
     "action_matrix",
     "intake_request",
+    "intake_answers",
     "inventory",
     "asset_categories",
     "communication_options",
+    "distribution_lists",
+    "file_share_permissions",
+    "role_distribution_lists",
+    "role_file_share_permissions",
     "alembic_version",
 }
 

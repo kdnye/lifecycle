@@ -13,9 +13,14 @@ ROLE_MATRIX_TABLE = "role_matrix"
 QUESTION_MATRIX_TABLE = "question_matrix"
 ACTION_MATRIX_TABLE = "action_matrix"
 INTAKE_REQUEST_TABLE = "intake_request"
+INTAKE_ANSWERS_TABLE = "intake_answers"
 INVENTORY_TABLE = "inventory"
 ASSET_CATEGORIES_TABLE = "asset_categories"
 COMMUNICATION_OPTIONS_TABLE = "communication_options"
+DISTRIBUTION_LISTS_TABLE = "distribution_lists"
+FILE_SHARE_PERMISSIONS_TABLE = "file_share_permissions"
+ROLE_DL_TABLE = "role_distribution_lists"
+ROLE_SHARE_TABLE = "role_file_share_permissions"
 
 
 class AssetStatus(str, enum.Enum):
@@ -24,6 +29,43 @@ class AssetStatus(str, enum.Enum):
     IN_REPAIR = "In_Repair"
     RETIRED   = "Retired"
     LOST      = "Lost"
+
+
+# Many-to-many association tables — defined before RoleMatrix so SQLAlchemy
+# can wire the secondary= relationships at class definition time.
+role_distribution_lists = db.Table(
+    ROLE_DL_TABLE,
+    db.Column(
+        "role_matrix_id",
+        db.Integer,
+        db.ForeignKey(f"{ROLE_MATRIX_TABLE}.id"),
+        nullable=False,
+    ),
+    db.Column(
+        "distribution_list_id",
+        db.Integer,
+        db.ForeignKey(f"{DISTRIBUTION_LISTS_TABLE}.id"),
+        nullable=False,
+    ),
+    db.PrimaryKeyConstraint("role_matrix_id", "distribution_list_id"),
+)
+
+role_file_share_permissions = db.Table(
+    ROLE_SHARE_TABLE,
+    db.Column(
+        "role_matrix_id",
+        db.Integer,
+        db.ForeignKey(f"{ROLE_MATRIX_TABLE}.id"),
+        nullable=False,
+    ),
+    db.Column(
+        "file_share_permission_id",
+        db.Integer,
+        db.ForeignKey(f"{FILE_SHARE_PERMISSIONS_TABLE}.id"),
+        nullable=False,
+    ),
+    db.PrimaryKeyConstraint("role_matrix_id", "file_share_permission_id"),
+)
 
 
 class User(db.Model):
@@ -49,6 +91,29 @@ class User(db.Model):
         self.password_hash = generate_password_hash(raw_password)
 
 
+class DistributionList(db.Model):
+    __tablename__ = DISTRIBUTION_LISTS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    email_address = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class FileSharePermission(db.Model):
+    __tablename__ = FILE_SHARE_PERMISSIONS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    share_path = db.Column(db.String(512), nullable=True)
+    access_level = db.Column(db.String(32), nullable=False, default="Read")
+    description = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
 class RoleMatrix(db.Model):
     __tablename__ = ROLE_MATRIX_TABLE
 
@@ -57,6 +122,17 @@ class RoleMatrix(db.Model):
     m365_plan = db.Column(db.String(64), nullable=False)
     hardware_default = db.Column(db.String(128), nullable=False)
     vpn_policy = db.Column(db.String(64), nullable=False)
+
+    distribution_lists = db.relationship(
+        "DistributionList",
+        secondary=role_distribution_lists,
+        lazy="select",
+    )
+    file_share_permissions = db.relationship(
+        "FileSharePermission",
+        secondary=role_file_share_permissions,
+        lazy="select",
+    )
 
 
 class QuestionMatrix(db.Model):
@@ -67,6 +143,13 @@ class QuestionMatrix(db.Model):
     question_key = db.Column(db.String(128), nullable=False)
     prompt = db.Column(db.String(512), nullable=False)
     is_required = db.Column(db.Boolean, default=False, nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    intake_step = db.Column(db.Integer, nullable=False, default=2)
+    # field_type values: boolean | text | textarea | select | date | number
+    field_type = db.Column(db.String(32), nullable=False, default="boolean")
+    # JSON array string for select/radio options, e.g. '["Yes", "No", "Maybe"]'
+    field_options = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
 
 class ActionMatrix(db.Model):
@@ -107,6 +190,32 @@ class IntakeRequest(db.Model):
     termination_date = db.Column(db.Date, nullable=True)
     is_immediate = db.Column(db.Boolean, nullable=False, default=False)
     forwarding_email = db.Column(db.String(255), nullable=True)
+
+
+class IntakeAnswer(db.Model):
+    __tablename__ = INTAKE_ANSWERS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    intake_request_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{INTAKE_REQUEST_TABLE}.id"),
+        nullable=False,
+        index=True,
+    )
+    question_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{QUESTION_MATRIX_TABLE}.id"),
+        nullable=False,
+    )
+    question_key = db.Column(db.String(128), nullable=False)
+    answer_value = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    intake_request = db.relationship(
+        "IntakeRequest",
+        backref=db.backref("dynamic_answers", lazy="dynamic"),
+    )
+    question = db.relationship("QuestionMatrix")
 
 
 class CommunicationOptions(db.Model):
