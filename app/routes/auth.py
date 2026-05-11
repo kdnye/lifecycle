@@ -7,6 +7,11 @@ from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email
 
+try:
+    from flask_babel import lazy_gettext as _
+except ImportError:
+    _ = lambda value: value
+
 from app.auth_utils import clear_authenticated_user, get_current_user, set_authenticated_user
 from app.models import User
 
@@ -14,9 +19,9 @@ auth_bp = Blueprint("auth", __name__)
 
 
 class LoginForm(FlaskForm):
-    email = StringField("Email Address", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    submit = SubmitField("Sign In")
+    email = StringField(_("Email Address"), validators=[DataRequired(), Email()])
+    password = PasswordField(_("Password"), validators=[DataRequired()])
+    submit = SubmitField(_("Sign In"))
 
 
 def _is_safe_next_url(next_url: str | None) -> bool:
