@@ -48,7 +48,7 @@
             <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
               <i class="bi bi-question-circle"></i> Help
             </a>
-            {% if current_user.can_manage_lifecycle %}
+            {% if g.current_user.can_manage_lifecycle %}
               <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary fsi-nav-action">
                 <i class="bi bi-diagram-3"></i> Question Builder
               </a>

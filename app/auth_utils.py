@@ -26,7 +26,10 @@ def login_required(view_func):
         if get_current_user() is None:
             if request.path.startswith("/api/"):
                 abort(401)
-            return redirect(url_for("auth.login", next=request.url))
+            next_path = request.path
+            if request.query_string:
+                next_path = f"{request.path}?{request.query_string.decode('utf-8', errors='ignore')}"
+            return redirect(url_for("auth.login", next=next_path))
         return view_func(*args, **kwargs)
 
     return wrapped_view
