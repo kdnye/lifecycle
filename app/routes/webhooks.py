@@ -3,35 +3,13 @@ import re
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app.models import Inventory, db
+from app.models import AssetStatus, Inventory, db
 
 
 SERIAL_PATTERN = re.compile(r"(?i)serial\s*number[\s:]*([A-Za-z0-9\-]+)")
 REQUEST_ID_PATTERN = re.compile(r"\[RequestID:\s*(\d+)\]")
-DEVICE_TYPE_PATTERN = re.compile(r"(?i)device\s*type[\s:]*([A-Za-z][A-Za-z0-9\s\-/]+)")
-DEVICE_TYPE_MAP = {
-    "laptop": "Laptop",
-    "notebook": "Laptop",
-    "desktop": "Desktop",
-    "workstation": "Desktop",
-    "tablet": "Tablet",
-    "phone": "Phone",
-    "mobile phone": "Phone",
-}
 
 webhooks_bp = Blueprint("webhooks", __name__, url_prefix="/api/webhooks")
-
-
-def _normalize_device_type(raw_device_type: str | None) -> str | None:
-    if not raw_device_type:
-        return None
-
-    normalized_key = re.sub(r"\s+", " ", raw_device_type.strip().lower())
-    mapped = DEVICE_TYPE_MAP.get(normalized_key)
-    if mapped:
-        return mapped
-
-    return None
 
 
 @webhooks_bp.post("/postmark-inbound")
@@ -87,17 +65,10 @@ def inbound_postmark():
 
     serial_number = serial_match.group(1).strip()
     intake_request_id = int(request_id_match.group(1)) if request_id_match else None
-    raw_device_type_match = DEVICE_TYPE_PATTERN.search(text_body)
-    device_type = _normalize_device_type(raw_device_type_match.group(1) if raw_device_type_match else None)
-    if raw_device_type_match and not device_type:
-        current_app.logger.info(
-            "webhook_parse_miss_device_type",
-            extra={"raw_device_type": raw_device_type_match.group(1)},
-        )
 
     inventory = Inventory(
         serial_number=serial_number,
-        device_type=device_type or "Laptop",
+        status=AssetStatus.AVAILABLE,
         intake_request_id=intake_request_id,
     )
 

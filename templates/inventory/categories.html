@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Asset Categories — Inventory{% endblock %}
+
+{% macro render_tree(nodes) %}
+  <ul class="list-group list-group-flush">
+    {% for node in nodes %}
+      <li class="list-group-item py-2 ps-3">
+        <span class="fw-semibold">{{ node.category.name }}</span>
+        {% if not node.category.is_active %}
+          <span class="badge bg-secondary ms-1 small">Inactive</span>
+        {% endif %}
+        {% if node.children %}
+          {{ render_tree(node.children) }}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('inventory.list_assets') }}">Inventory</a></li>
+    <li class="breadcrumb-item active">Categories</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h1 class="fsi-display mb-0">Asset Categories</h1>
+</div>
+
+<div class="row g-4">
+  <!-- Category tree -->
+  <div class="col-12 col-md-7">
+    <div class="fsi-card">
+      <h5 class="mb-3">Category Hierarchy</h5>
+      {% if tree %}
+        {{ render_tree(tree) }}
+      {% else %}
+        <p class="text-muted">No categories yet. Add one using the form.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Add category form -->
+  <div class="col-12 col-md-5">
+    <div class="fsi-card">
+      <h5 class="mb-3">Add Category</h5>
+      <form method="post" action="{{ url_for('inventory.create_category') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="mb-3">
+          <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+          <input type="text" id="name" name="name" class="form-control" required
+                 placeholder="e.g. Laptops" />
+        </div>
+
+        <div class="mb-3">
+          <label for="parent_id" class="form-label">Parent Category (optional)</label>
+          <select id="parent_id" name="parent_id" class="form-select">
+            <option value="">None (top-level)</option>
+            {% for cat in all_categories %}
+              <option value="{{ cat.id }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn fsi-button-primary">Add Category</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

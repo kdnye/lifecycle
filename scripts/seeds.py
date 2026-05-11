@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from sqlalchemy import inspect
 
 from app import create_app
-from app.models import ActionMatrix, QuestionMatrix, RoleMatrix, db
+from app.models import ActionMatrix, AssetCategory, QuestionMatrix, RoleMatrix, db
 
 
 @dataclass(frozen=True)
@@ -107,10 +107,33 @@ ACTION_SEED_ROWS: tuple[ActionSeedRow, ...] = (
     ActionSeedRow("offboarding:driver", "asset-recovery-routing", "FSI Ops"),
 )
 
+# (name, parent_name) — None parent means top-level
+CATEGORY_SEEDS: list[tuple[str, str | None]] = [
+    ("Computers", None),
+    ("Monitors", None),
+    ("Peripherals", None),
+    ("Office Furniture", None),
+    ("Printing", None),
+    ("Vehicles", None),
+    ("Laptops", "Computers"),
+    ("Desktops", "Computers"),
+    ("Keyboards", "Peripherals"),
+    ("Mice", "Peripherals"),
+    ("Office Chairs", "Office Furniture"),
+    ("Printers", "Printing"),
+    ("Trucks", "Vehicles"),
+    ("Pallet Jacks", "Vehicles"),
+]
+
 
 def _ensure_required_tables_exist() -> None:
     inspector = inspect(db.engine)
-    required_tables = {RoleMatrix.__tablename__, QuestionMatrix.__tablename__, ActionMatrix.__tablename__}
+    required_tables = {
+        RoleMatrix.__tablename__,
+        QuestionMatrix.__tablename__,
+        ActionMatrix.__tablename__,
+        AssetCategory.__tablename__,
+    }
     existing_tables = set(inspector.get_table_names())
     missing_tables = sorted(required_tables - existing_tables)
     if missing_tables:
@@ -219,19 +242,55 @@ def _upsert_action_rows() -> int:
     return changed
 
 
+def _upsert_category_rows() -> int:
+    """Two-pass idempotent upsert: top-level first, then children."""
+    changed = 0
+    name_to_id: dict[str, int] = {}
+
+    # Pass 1: top-level categories
+    for name, parent_name in CATEGORY_SEEDS:
+        if parent_name is not None:
+            continue
+        existing = AssetCategory.query.filter_by(name=name, parent_category_id=None).first()
+        if existing:
+            name_to_id[name] = existing.id
+        else:
+            cat = AssetCategory(name=name, is_active=True)
+            db.session.add(cat)
+            db.session.flush()
+            name_to_id[name] = cat.id
+            changed += 1
+
+    # Pass 2: child categories
+    for name, parent_name in CATEGORY_SEEDS:
+        if parent_name is None:
+            continue
+        parent_id = name_to_id.get(parent_name)
+        if parent_id is None:
+            continue
+        existing = AssetCategory.query.filter_by(name=name, parent_category_id=parent_id).first()
+        if not existing:
+            cat = AssetCategory(name=name, parent_category_id=parent_id, is_active=True)
+            db.session.add(cat)
+            changed += 1
+
+    return changed
+
+
 def seed_baseline_policy_rows() -> int:
     _ensure_required_tables_exist()
     total_changes = 0
     total_changes += _upsert_role_rows()
     total_changes += _upsert_question_rows()
     total_changes += _upsert_action_rows()
+    total_changes += _upsert_category_rows()
     db.session.commit()
     return total_changes
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Seed baseline RoleMatrix, QuestionMatrix, and ActionMatrix rows (idempotent)."
+        description="Seed baseline policy rows and asset categories (idempotent)."
     )
     parser.add_argument(
         "--strict",
@@ -244,7 +303,7 @@ def main() -> int:
     with app.app_context():
         changes = seed_baseline_policy_rows()
 
-    print(f"Baseline seed complete. Rows inserted/updated/deduplicated: {changes}")
+    print(f"Seed complete. Rows inserted/updated/deduplicated: {changes}")
     if args.strict and changes == 0:
         return 2
     return 0

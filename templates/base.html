@@ -1,90 +1,136 @@
 <!doctype html>
-<html
-  lang="en"
-  data-theme="{{ g.current_user.theme if g.current_user and g.current_user.theme in ['light', 'dark'] else 'light' }}"
->
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}FSI Lifecycle{% endblock %}</title>
 
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <!-- FOUC prevention: apply saved theme before first paint -->
+    <script>
+      (function () {
+        var t = localStorage.getItem('fsiTheme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', t);
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+
+    <!-- Bootstrap 5.3.3 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <!-- Bootstrap Icons 1.11.3 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Google Fonts (preconnect — no @import) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap"
-    />
-
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" />
+    <!-- FSI design system -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/fsi.css') }}" />
-    <script defer src="{{ url_for('static', filename='js/navbar.js') }}"></script>
+
+    <!-- CSRF token for AJAX requests -->
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+
+    {% block head %}{% endblock %}
   </head>
   <body>
     <nav class="fsi-navbar">
-      <div class="fsi-container">
-        <a class="fsi-brand" href="{{ url_for('dashboard.index') }}">FSI Lifecycle</a>
-        <div class="fsi-nav-actions">
-          <a href="{{ url_for('intake.intake_form') }}" class="fsi-primary-btn" style="text-decoration: none">New Request</a>
-          <a href="{{ url_for('help.index') }}" aria-label="Help" class="fsi-help">?</a>
+      <div class="fsi-navbar__container">
+        <a class="fsi-navbar__brand" href="{{ url_for('dashboard.index') }}">
+          <span class="fsi-navbar__brand-name">FSI Lifecycle</span>
+        </a>
 
-          <div class="fsi-account-menu" data-account-menu>
-            {% if g.current_user %}
-            <img
-              class="fsi-nav-avatar"
-              src="{{ g.current_user.avatar_url or url_for('static', filename='img/default-avatar.svg') }}"
-              alt="Account avatar"
-            />
-            <span class="fsi-nav-user-name"
-              >{{ g.current_user.full_name or g.current_user.name or g.current_user.email }}</span
-            >
-            {% endif %}
-            <button
-              type="button"
-              class="fsi-secondary-btn"
-              id="account-menu-button"
-              aria-expanded="false"
-              aria-controls="account-menu-list"
-              aria-haspopup="menu"
-              data-account-menu-toggle
-            >
-              Account ▾
+        <div class="fsi-navbar__menu">
+          <a href="{{ url_for('intake.intake_form') }}" class="btn fsi-button-primary fsi-nav-action">
+            <i class="bi bi-plus-lg"></i> New Request
+          </a>
+          <a href="{{ url_for('inventory.list_assets') }}" class="btn fsi-button-secondary fsi-nav-action">
+            <i class="bi bi-box-seam"></i> Inventory
+          </a>
+          <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
+            <i class="bi bi-question-circle"></i> Help
+          </a>
+
+          <button type="button" id="fsi-theme-toggle" class="btn fsi-button-secondary fsi-nav-action" aria-label="Toggle dark mode">
+            <i class="bi bi-moon-stars" id="fsi-theme-icon"></i>
+          </button>
+
+          <div class="dropdown">
+            <button class="btn fsi-button-secondary dropdown-toggle fsi-nav-action" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+              {% if g.current_user %}
+                {{ g.current_user.first_name or g.current_user.name or g.current_user.email }}
+              {% else %}
+                Account
+              {% endif %}
             </button>
-            <ul
-              id="account-menu-list"
-              class="fsi-account-menu-list"
-              role="menu"
-              aria-labelledby="account-menu-button"
-              hidden
-              data-account-menu-list
-            >
-              <li role="none">
-                <a role="menuitem" href="{{ url_for('account.profile') }}" tabindex="-1" data-account-menu-item>Profile</a>
-              </li>
-              <li role="none">
-                <a role="menuitem" href="{{ url_for('dashboard.index') }}" tabindex="-1" data-account-menu-item>Dashboard</a>
-              </li>
-              <li role="none">
-                <a role="menuitem" href="{{ url_for('account.communication_options') }}" tabindex="-1" data-account-menu-item>Communication options</a>
-              </li>
-              <li role="none">
-                <a role="menuitem" href="{{ url_for('account.logout') }}" tabindex="-1" data-account-menu-item>Sign out</a>
-              </li>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('account.profile') }}">Profile</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('account.communication_options') }}">Communication Options</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li><a class="dropdown-item" href="{{ url_for('account.logout') }}">Sign out</a></li>
             </ul>
           </div>
         </div>
       </div>
     </nav>
 
-    <main class="fsi-container {% block main_container_class %}{% endblock %}">
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
-      <ul class="fsi-flashes">
-        {% for category, msg in messages %}
-        <li class="fsi-flash fsi-flash-{{ category }}">{{ msg }}</li>
-        {% endfor %}
-      </ul>
-      {% endif %} {% endwith %} {% block content %}{% endblock %}
+    <main class="container py-4 {% block main_container_class %}{% endblock %}">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+              {{ msg }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
     </main>
 
-    <footer class="fsi-footer">© {{ 2026 }} Freight Services Inc.</footer>
+    <footer class="py-3 mt-auto text-center border-top">
+      <small class="text-muted">&copy; {{ 2026 }} Freight Services Inc.</small>
+    </footer>
+
+    <!-- Bootstrap 5.3.3 JS bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmElMpZ0pjm1vT8kN0fL1sAlhFU1" crossorigin="anonymous"></script>
+
+    <!-- Theme toggle -->
+    <script>
+      (function () {
+        var btn  = document.getElementById('fsi-theme-toggle');
+        var icon = document.getElementById('fsi-theme-icon');
+        var current = localStorage.getItem('fsiTheme') || 'light';
+
+        function applyTheme(theme) {
+          document.documentElement.setAttribute('data-bs-theme', theme);
+          document.documentElement.setAttribute('data-theme', theme);
+          if (icon) {
+            icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+          }
+        }
+
+        applyTheme(current);
+
+        if (btn) {
+          btn.addEventListener('click', function () {
+            current = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('fsiTheme', current);
+            applyTheme(current);
+            var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            fetch('{{ url_for("account.set_theme") }}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfMeta ? csrfMeta.content : '',
+              },
+              body: 'theme=' + encodeURIComponent(current),
+            }).catch(function () {});
+          });
+        }
+      })();
+    </script>
+
+    {% block scripts %}{% endblock %}
   </body>
 </html>

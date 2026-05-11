@@ -22,6 +22,10 @@ class Settings:
     stellar_support_email: str
     stellar_sales_email: str
     internal_cron_shared_secret: str | None
+    asset_photos_bucket: str | None
+    mail_suppress_send: bool
+    pool_recycle: int
+    pool_max_overflow: int
 
 
 def _is_truthy(value: str | None) -> bool:
@@ -83,6 +87,10 @@ def load_settings() -> Settings:
         stellar_support_email=os.getenv("STELLAR_SUPPORT_EMAIL", "support@stellar.tech"),
         stellar_sales_email=os.getenv("STELLAR_SALES_EMAIL", "sales@stellar.tech"),
         internal_cron_shared_secret=os.getenv("INTERNAL_CRON_SHARED_SECRET"),
+        asset_photos_bucket=os.getenv("ASSET_PHOTOS_BUCKET"),
+        mail_suppress_send=_is_truthy(os.getenv("MAIL_SUPPRESS_SEND", "false")),
+        pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "1800")),
+        pool_max_overflow=int(os.getenv("DB_POOL_MAX_OVERFLOW", "5")),
     )
 
 
