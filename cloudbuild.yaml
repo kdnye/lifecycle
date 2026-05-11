@@ -33,7 +33,7 @@ steps:
       - '--set-env-vars'
       - 'INSTANCE_CONNECTION_NAME=${_INSTANCE_CONNECTION_NAME},MIGRATE_ON_STARTUP=false'
       - '--set-secrets'
-      - 'expense_db_pass=expense_db_pass:latest,expense_db_user=expense_db_user:latest,expense_db_name=expense_db_name:latest'
+      - 'DB_PASS=expense_db_pass:latest,DB_USER=expense_db_user:latest,DB_NAME=expense_db_name:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/lifecycle:$COMMIT_SHA'
