@@ -2,12 +2,21 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-from flask import Blueprint, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_wtf import FlaskForm
+from wtforms import PasswordField, StringField, SubmitField
+from wtforms.validators import DataRequired, Email
 
 from app.auth_utils import clear_authenticated_user, get_current_user, set_authenticated_user
 from app.models import User
 
 auth_bp = Blueprint("auth", __name__)
+
+
+class LoginForm(FlaskForm):
+    email = StringField("Email Address", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Sign In")
 
 
 def _is_safe_next_url(next_url: str | None) -> bool:
@@ -22,49 +31,64 @@ def _is_safe_next_url(next_url: str | None) -> bool:
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     current_user = get_current_user()
-    if request.method == "GET":
-        if current_user is not None:
-            return redirect(url_for("dashboard.index"))
-        return render_template("auth/login.html")
+    form = LoginForm()
+
+    if request.method == "GET" and current_user is not None:
+        return redirect(url_for("dashboard.index"))
 
     is_json_request = request.is_json
     if is_json_request:
         payload = request.get_json(silent=True) or {}
         email = str(payload.get("email", "")).strip().lower()
+        password = str(payload.get("password", ""))
     else:
-        email = str(request.form.get("email", "")).strip().lower()
+        email = str(form.email.data or "").strip().lower()
+        password = str(form.password.data or "")
 
-    if not email:
-        message = "Email is required."
-        remediation = "Provide a valid account email."
+    if request.method == "POST":
         if is_json_request:
-            return jsonify({"status": "error", "message": message, "remediation": remediation}), 400
-        return render_template("auth/login.html", error_message=message), 400
+            if not email or not password:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "Email and password are required.",
+                            "remediation": "Provide valid account credentials and try again.",
+                        }
+                    ),
+                    400,
+                )
+        elif not form.validate_on_submit():
+            return render_template("auth/login.html", form=form), 400
 
-    user = User.query.filter_by(email=email).first()
-    if user is None:
-        message = "User not found."
-        remediation = "Use a registered lifecycle-management account or ask an admin to provision access."
+        user = User.query.filter_by(email=email).first()
+        if user is None or not user.check_password(password):
+            message = "Invalid email or password. Please try again."
+            remediation = "Use your registered account credentials or contact an administrator."
+            if is_json_request:
+                return jsonify({"status": "error", "message": message, "remediation": remediation}), 401
+            flash(message, "error")
+            return render_template("auth/login.html", form=form), 401
+
+        if not user.can_manage_lifecycle:
+            message = "Unauthorized. You do not have permissions to manage employee lifecycles."
+            remediation = "Request can_manage_lifecycle access from an administrator, then log in again."
+            if is_json_request:
+                return jsonify({"status": "error", "message": message, "remediation": remediation}), 403
+            flash(message, "error")
+            return render_template("auth/login.html", form=form), 403
+
+        set_authenticated_user(user)
+
         if is_json_request:
-            return jsonify({"status": "error", "message": message, "remediation": remediation}), 404
-        return render_template("auth/login.html", error_message=message), 404
+            return jsonify({"status": "success", "message": "Logged in.", "user_id": user.id})
 
-    if not user.can_manage_lifecycle:
-        message = "Unauthorized. You do not have permissions to manage employee lifecycles."
-        remediation = "Request can_manage_lifecycle access from an administrator, then log in again."
-        if is_json_request:
-            return jsonify({"status": "error", "message": message, "remediation": remediation}), 403
-        return render_template("auth/login.html", error_message=message), 403
+        next_page = request.args.get("next")
+        if not _is_safe_next_url(next_page):
+            next_page = url_for("dashboard.index")
+        return redirect(next_page)
 
-    set_authenticated_user(user)
-
-    if is_json_request:
-        return jsonify({"status": "success", "message": "Logged in.", "user_id": user.id})
-
-    next_page = request.args.get("next")
-    if not _is_safe_next_url(next_page):
-        next_page = url_for("dashboard.index")
-    return redirect(next_page)
+    return render_template("auth/login.html", form=form)
 
 
 @auth_bp.route("/logout", methods=["GET", "POST"])
@@ -72,6 +96,7 @@ def logout():
     clear_authenticated_user()
     if request.is_json:
         return jsonify({"status": "success", "message": "Logged out."})
+    flash("You have been successfully logged out.", "info")
     return redirect(url_for("auth.login"))
 
 
@@ -84,7 +109,7 @@ def me():
                 {
                     "status": "error",
                     "message": "Not authenticated.",
-                    "remediation": "Call /login with your lifecycle-management email, then retry /me.",
+                    "remediation": "Call /login with your lifecycle-management credentials, then retry /me.",
                 }
             ),
             401,

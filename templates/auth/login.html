@@ -8,20 +8,29 @@
     <div class="card shadow-sm">
       <div class="card-body p-4">
         <h1 class="h4 mb-3 text-center">Sign in to Lifecycle</h1>
-        <p class="text-muted small text-center mb-4">Use your FSI account email to continue.</p>
+        <p class="text-muted small text-center mb-4">Use your FSI account credentials to continue.</p>
 
-        {% if error_message %}
-          <div class="alert alert-danger" role="alert">{{ error_message }}</div>
-        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
         <form method="post" action="{{ url_for('auth.login', next=request.args.get('next', '')) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          {{ form.hidden_tag() }}
           <div class="mb-3">
-            <label for="email" class="form-label">Email address</label>
-            <input id="email" name="email" type="email" class="form-control" required autocomplete="email" />
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control", autocomplete="email", placeholder="name@freightservices.net") }}
           </div>
 
-          <button type="submit" class="btn fsi-button-primary w-100">Sign in</button>
+          <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control", autocomplete="current-password", placeholder="••••••••") }}
+          </div>
+
+          {{ form.submit(class="btn fsi-button-primary w-100") }}
         </form>
       </div>
     </div>
