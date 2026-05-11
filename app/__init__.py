@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, g, jsonify, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate
@@ -141,6 +141,10 @@ def create_app() -> Flask:
         except (TypeError, ValueError):
             return []
 
+
+    @app.context_processor
+    def inject_current_user():
+        return {"current_user": getattr(g, "current_user", None)}
 
     @app.before_request
     def enforce_maintenance_mode():
