@@ -212,7 +212,14 @@ def create_app() -> Flask:
         )
 
     if app.config.get("MIGRATE_ON_STARTUP"):
-        with app.app_context():
-            migrate_upgrade()
+        try:
+            with app.app_context():
+                migrate_upgrade()
+        except Exception as exc:
+            startup_issues = app.config.setdefault("STARTUP_ISSUES", [])
+            startup_issues.append(
+                "Startup migration failed. Run `flask db upgrade` and review Alembic logs."
+            )
+            app.logger.exception("MIGRATE_ON_STARTUP failed", extra={"error": str(exc)})
 
     return app
