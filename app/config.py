@@ -53,7 +53,9 @@ def _build_database_url_from_components() -> str | None:
 
 
 def _resolve_database_url() -> str | None:
-    return os.getenv("DATABASE_URL") or _build_database_url_from_components()
+    # Prefer Cloud SQL component-based configuration when present (Cloud Run),
+    # then fall back to DATABASE_URL (local/dev or explicit override).
+    return _build_database_url_from_components() or os.getenv("DATABASE_URL")
 
 
 def _resolve_production_flag() -> bool:
