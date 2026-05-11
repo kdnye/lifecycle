@@ -65,3 +65,18 @@ def save_answers(intake_request_id: int, payload: Mapping[str, object]) -> int:
         ) from exc
 
     return len(answers_to_save)
+
+
+def get_grouped_active_questions_by_step() -> dict[int, list[QuestionMatrix]]:
+    grouped: dict[int, list[QuestionMatrix]] = {}
+    questions = (
+        db.session.query(QuestionMatrix)
+        .filter(QuestionMatrix.is_active.is_(True))
+        .order_by(QuestionMatrix.intake_step.asc(), QuestionMatrix.sort_order.asc(), QuestionMatrix.id.asc())
+        .all()
+    )
+
+    for question in questions:
+        grouped.setdefault(question.intake_step, []).append(question)
+
+    return grouped

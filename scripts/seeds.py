@@ -23,6 +23,11 @@ class QuestionSeedRow:
     question_key: str
     prompt: str
     is_required: bool
+    intake_step: int
+    field_type: str
+    sort_order: int
+    options_json: str | None = None
+    is_active: bool = True
 
 
 @dataclass(frozen=True)
@@ -46,54 +51,81 @@ QUESTION_SEED_ROWS: tuple[QuestionSeedRow, ...] = (
         "needs_non_standard_hardware",
         "Does this office/ops hire need non-standard hardware?",
         False,
+        2,
+        "boolean",
+        10,
     ),
     QuestionSeedRow(
         "office",
         "needs_distribution_lists",
         "Should we assign distribution lists or shared mailbox access?",
         False,
+        3,
+        "boolean",
+        20,
     ),
     QuestionSeedRow(
         "manager",
         "needs_distribution_lists",
         "Should this manager be added to management distribution lists/shared mailboxes?",
         False,
+        3,
+        "boolean",
+        20,
     ),
     QuestionSeedRow(
         "manager",
         "needs_receptionist_access",
         "Does this manager require receptionist/console access?",
         False,
+        3,
+        "boolean",
+        30,
     ),
     QuestionSeedRow(
         "driver",
         "needs_mobile_dispatch",
         "Does the driver require mobile dispatch app provisioning?",
         True,
+        2,
+        "boolean",
+        10,
     ),
     QuestionSeedRow(
         "warehouse",
         "needs_shared_terminal_access",
         "Does the warehouse employee need shared terminal access?",
         True,
+        2,
+        "boolean",
+        10,
     ),
     QuestionSeedRow(
         "contractor",
         "contract_end_date_required",
         "Contractor hard-stop: what is the contract end date?",
         True,
+        2,
+        "date",
+        10,
     ),
     QuestionSeedRow(
         "offboarding",
         "is_immediate_termination",
         "Is this offboarding immediate?",
         True,
+        1,
+        "boolean",
+        10,
     ),
     QuestionSeedRow(
         "offboarding",
         "mailbox_forwarding_target",
         "Should mailbox forwarding be enabled, and to which address?",
         False,
+        2,
+        "text",
+        20,
     ),
 )
 
@@ -193,15 +225,33 @@ def _upsert_question_rows() -> int:
                     question_key=row.question_key,
                     prompt=row.prompt,
                     is_required=row.is_required,
+                    intake_step=row.intake_step,
+                    field_type=row.field_type,
+                    sort_order=row.sort_order,
+                    options_json=row.options_json,
+                    is_active=row.is_active,
                 )
             )
             changed += 1
             continue
 
         canonical = existing_rows[0]
-        if canonical.prompt != row.prompt or canonical.is_required != row.is_required:
+        if (
+            canonical.prompt != row.prompt
+            or canonical.is_required != row.is_required
+            or canonical.intake_step != row.intake_step
+            or canonical.field_type != row.field_type
+            or canonical.sort_order != row.sort_order
+            or canonical.options_json != row.options_json
+            or canonical.is_active != row.is_active
+        ):
             canonical.prompt = row.prompt
             canonical.is_required = row.is_required
+            canonical.intake_step = row.intake_step
+            canonical.field_type = row.field_type
+            canonical.sort_order = row.sort_order
+            canonical.options_json = row.options_json
+            canonical.is_active = row.is_active
             changed += 1
 
         for duplicate in existing_rows[1:]:
