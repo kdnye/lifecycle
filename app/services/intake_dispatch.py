@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.models import IntakeRequest, db
+from app.services.question_service import AnswerPersistenceError, save_answers
 from app.services.workflow import initiate_lifecycle_event
 
 TRUTHY_VALUES = {"1", "true", "on", "yes"}
@@ -87,6 +88,21 @@ def process_intake_dispatch(payload: dict) -> IntakeDispatchResult:
                 "status": "error",
                 "message": "Unable to create intake request.",
                 "remediation": "Verify database connectivity and schema migrations are up to date, then retry submission.",
+            },
+            status_code=500,
+        )
+
+    try:
+        save_answers(intake.id, data)
+        db.session.commit()
+    except AnswerPersistenceError:
+        db.session.rollback()
+        return IntakeDispatchResult(
+            body={
+                "status": "error",
+                "message": "Intake request was created, but dynamic answers could not be saved.",
+                "remediation": "Resubmit the intake with dynamic question responses or contact support to reconcile missing answers for this intake_id.",
+                "intake_id": intake.id,
             },
             status_code=500,
         )
