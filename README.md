@@ -46,7 +46,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the full system diagram.
 | `POSTMARK_WEBHOOK_TOKEN` | Recommended | — | Token for authenticating Postmark inbound webhooks. |
 | `ASSET_PHOTOS_BUCKET` | For photo upload | — | GCS bucket name for asset photos. |
 | `MAIL_SUPPRESS_SEND` | No | `false` | Set `true` in dev to skip email sending. |
-| `MIGRATE_ON_STARTUP` | No | `false` | Set `true` on Cloud Run to auto-run `flask db upgrade` at startup. |
+| `MIGRATE_ON_STARTUP` | No | `false` | Leave `false` in Cloud Run. Use CI/CD or startup command to run `flask db upgrade` once before Gunicorn workers boot. |
 | `DB_POOL_RECYCLE` | No | `1800` | SQLAlchemy `pool_recycle` (seconds). |
 | `DB_POOL_MAX_OVERFLOW` | No | `5` | SQLAlchemy `max_overflow`. |
 | `APP_ENV` | No | `development` | Set `test` to disable CSRF and rate limiting. |
@@ -96,7 +96,7 @@ Deployed as a Cloud Run service. On each deploy:
 
 1. Docker image built from `Dockerfile`
 2. Cloud Run service updated
-3. If `MIGRATE_ON_STARTUP=true`, `flask db upgrade` runs before the first request is served
+3. Container startup runs `flask db upgrade` before Gunicorn boots workers.
 4. `/healthz` and `/readyz` endpoints are available for Cloud Run health probes
 
 Cloud Run provides `K_SERVICE` env var which lifecycle uses to auto-detect production mode (`FSI_PRODUCTION=true`).
