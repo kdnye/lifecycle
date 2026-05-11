@@ -120,6 +120,10 @@ class QuestionMatrix(db.Model):
     intake_step = db.Column(db.Integer, nullable=False, default=1)
     field_type = db.Column(db.String(32), nullable=True)
     options_json = db.Column(db.Text, nullable=True)
+    depends_on_question_key = db.Column(db.String(128), nullable=True, index=True)
+    depends_on_answer_value = db.Column(db.String(512), nullable=True)
+    visibility_rule = db.Column(db.String(16), nullable=False, default="equals")
+    is_dynamic = db.Column(db.Boolean, nullable=False, default=False)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 

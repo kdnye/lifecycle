@@ -19,6 +19,11 @@ LIFECYCLE_OWNED_TABLES = {
     "inventory",
     "asset_categories",
     "communication_options",
+    "intake_answers",
+    "distribution_lists",
+    "file_share_permissions",
+    "role_distribution_lists",
+    "role_file_share_permissions",
     "alembic_version",
 }
 
