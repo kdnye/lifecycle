@@ -3,7 +3,7 @@ from datetime import datetime
 import uuid
 
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 db = SQLAlchemy()
@@ -85,6 +85,11 @@ class User(db.Model):
 
     def set_password(self, raw_password: str) -> None:
         self.password_hash = generate_password_hash(raw_password)
+
+    def check_password(self, raw_password: str) -> bool:
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, raw_password)
 
 
 class RoleMatrix(db.Model):
