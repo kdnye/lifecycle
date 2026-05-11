@@ -47,6 +47,14 @@
           <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
             <i class="bi bi-question-circle"></i> Help
           </a>
+          {% if current_user and current_user.can_manage_lifecycle %}
+            <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary fsi-nav-action">
+              <i class="bi bi-diagram-3"></i> Question Builder
+            </a>
+            <a href="{{ url_for('permissions.matrix') }}" class="btn fsi-button-secondary fsi-nav-action">
+              <i class="bi bi-shield-lock"></i> Permissions
+            </a>
+          {% endif %}
 
           <button type="button" id="fsi-theme-toggle" class="btn fsi-button-secondary fsi-nav-action" aria-label="Toggle dark mode">
             <i class="bi bi-moon-stars" id="fsi-theme-icon"></i>
