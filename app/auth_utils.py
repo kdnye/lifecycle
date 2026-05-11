@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import wraps
 
-from flask import abort, g, session
+from flask import abort, g, redirect, request, session, url_for
 
 from app.models import User, db
 
@@ -24,7 +24,9 @@ def login_required(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
         if get_current_user() is None:
-            abort(401)
+            if request.path.startswith("/api/"):
+                abort(401)
+            return redirect(url_for("auth.login", next=request.url))
         return view_func(*args, **kwargs)
 
     return wrapped_view

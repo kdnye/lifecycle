@@ -38,21 +38,30 @@
         </a>
 
         <div class="fsi-navbar__menu">
-          <a href="{{ url_for('intake.intake_form') }}" class="btn fsi-button-primary fsi-nav-action">
-            <i class="bi bi-plus-lg"></i> New Request
-          </a>
-          <a href="{{ url_for('inventory.list_assets') }}" class="btn fsi-button-secondary fsi-nav-action">
-            <i class="bi bi-box-seam"></i> Inventory
-          </a>
-          <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
-            <i class="bi bi-question-circle"></i> Help
-          </a>
-          {% if current_user and current_user.can_manage_lifecycle %}
-            <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary fsi-nav-action">
-              <i class="bi bi-diagram-3"></i> Question Builder
+          {% if g.current_user %}
+            <a href="{{ url_for('intake.intake_form') }}" class="btn fsi-button-primary fsi-nav-action">
+              <i class="bi bi-plus-lg"></i> New Request
             </a>
-            <a href="{{ url_for('permissions.matrix') }}" class="btn fsi-button-secondary fsi-nav-action">
-              <i class="bi bi-shield-lock"></i> Permissions
+            <a href="{{ url_for('inventory.list_assets') }}" class="btn fsi-button-secondary fsi-nav-action">
+              <i class="bi bi-box-seam"></i> Inventory
+            </a>
+            <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
+              <i class="bi bi-question-circle"></i> Help
+            </a>
+            {% if current_user.can_manage_lifecycle %}
+              <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary fsi-nav-action">
+                <i class="bi bi-diagram-3"></i> Question Builder
+              </a>
+              <a href="{{ url_for('permissions.matrix') }}" class="btn fsi-button-secondary fsi-nav-action">
+                <i class="bi bi-shield-lock"></i> Permissions
+              </a>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('help.index') }}" class="btn fsi-button-secondary fsi-nav-action">
+              <i class="bi bi-question-circle"></i> Help
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn fsi-button-primary fsi-nav-action">
+              <i class="bi bi-box-arrow-in-right"></i> Login
             </a>
           {% endif %}
 
@@ -74,7 +83,7 @@
               <li><a class="dropdown-item" href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
               <li><a class="dropdown-item" href="{{ url_for('account.communication_options') }}">Communication Options</a></li>
               <li><hr class="dropdown-divider" /></li>
-              <li><a class="dropdown-item" href="{{ url_for('account.logout') }}">Sign out</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Sign out</a></li>
             </ul>
           </div>
         </div>
