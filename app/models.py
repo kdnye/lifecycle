@@ -16,6 +16,44 @@ INTAKE_REQUEST_TABLE = "intake_request"
 INVENTORY_TABLE = "inventory"
 ASSET_CATEGORIES_TABLE = "asset_categories"
 COMMUNICATION_OPTIONS_TABLE = "communication_options"
+INTAKE_ANSWERS_TABLE = "intake_answers"
+DISTRIBUTION_LISTS_TABLE = "distribution_lists"
+FILE_SHARE_PERMISSIONS_TABLE = "file_share_permissions"
+ROLE_DISTRIBUTION_LISTS_TABLE = "role_distribution_lists"
+ROLE_FILE_SHARE_PERMISSIONS_TABLE = "role_file_share_permissions"
+
+
+role_distribution_lists = db.Table(
+    ROLE_DISTRIBUTION_LISTS_TABLE,
+    db.Column(
+        "role_matrix_id",
+        db.Integer,
+        db.ForeignKey(f"{ROLE_MATRIX_TABLE}.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "distribution_list_id",
+        db.Integer,
+        db.ForeignKey(f"{DISTRIBUTION_LISTS_TABLE}.id"),
+        primary_key=True,
+    ),
+)
+
+role_file_share_permissions = db.Table(
+    ROLE_FILE_SHARE_PERMISSIONS_TABLE,
+    db.Column(
+        "role_matrix_id",
+        db.Integer,
+        db.ForeignKey(f"{ROLE_MATRIX_TABLE}.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "file_share_permission_id",
+        db.Integer,
+        db.ForeignKey(f"{FILE_SHARE_PERMISSIONS_TABLE}.id"),
+        primary_key=True,
+    ),
+)
 
 
 class AssetStatus(str, enum.Enum):
@@ -57,6 +95,18 @@ class RoleMatrix(db.Model):
     m365_plan = db.Column(db.String(64), nullable=False)
     hardware_default = db.Column(db.String(128), nullable=False)
     vpn_policy = db.Column(db.String(64), nullable=False)
+    distribution_lists = db.relationship(
+        "DistributionList",
+        secondary=role_distribution_lists,
+        back_populates="role_profiles",
+        lazy="select",
+    )
+    file_share_permissions = db.relationship(
+        "FileSharePermission",
+        secondary=role_file_share_permissions,
+        back_populates="role_profiles",
+        lazy="select",
+    )
 
 
 class QuestionMatrix(db.Model):
@@ -67,6 +117,69 @@ class QuestionMatrix(db.Model):
     question_key = db.Column(db.String(128), nullable=False)
     prompt = db.Column(db.String(512), nullable=False)
     is_required = db.Column(db.Boolean, default=False, nullable=False)
+    intake_step = db.Column(db.Integer, nullable=False, default=1)
+    field_type = db.Column(db.String(32), nullable=True)
+    options_json = db.Column(db.Text, nullable=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+
+class IntakeAnswer(db.Model):
+    __tablename__ = INTAKE_ANSWERS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    intake_request_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{INTAKE_REQUEST_TABLE}.id"),
+        nullable=False,
+        index=True,
+    )
+    question_matrix_id = db.Column(
+        db.Integer,
+        db.ForeignKey(f"{QUESTION_MATRIX_TABLE}.id"),
+        nullable=False,
+        index=True,
+    )
+    answer_value = db.Column(db.Text, nullable=True)
+    answered_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    intake_request = db.relationship("IntakeRequest")
+    question = db.relationship("QuestionMatrix")
+
+
+class DistributionList(db.Model):
+    __tablename__ = DISTRIBUTION_LISTS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False, unique=True)
+    email = db.Column(db.String(255), nullable=False, unique=True)
+    description = db.Column(db.String(255), nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    role_profiles = db.relationship(
+        "RoleMatrix",
+        secondary=role_distribution_lists,
+        back_populates="distribution_lists",
+        lazy="select",
+    )
+
+
+class FileSharePermission(db.Model):
+    __tablename__ = FILE_SHARE_PERMISSIONS_TABLE
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False, unique=True)
+    resource_path = db.Column(db.String(512), nullable=False, unique=True)
+    access_level = db.Column(db.String(64), nullable=True)
+    description = db.Column(db.String(255), nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    role_profiles = db.relationship(
+        "RoleMatrix",
+        secondary=role_file_share_permissions,
+        back_populates="file_share_permissions",
+        lazy="select",
+    )
 
 
 class ActionMatrix(db.Model):
