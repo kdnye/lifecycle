@@ -26,4 +26,4 @@ USER appuser
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8080} --worker-tmp-dir /dev/shm --timeout ${GUNICORN_TIMEOUT:-120} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-8} wsgi:app"]
+CMD ["sh", "-c", "flask db upgrade && exec gunicorn --bind 0.0.0.0:${PORT:-8080} --worker-tmp-dir /dev/shm --timeout ${GUNICORN_TIMEOUT:-120} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-8} wsgi:app"]
