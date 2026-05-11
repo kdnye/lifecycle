@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Distribution Lists{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0">Email Distribution Lists</h1>
+    <p class="text-muted mb-0 small">Manage distribution groups that are assigned to roles in the permission matrix.</p>
+  </div>
+  <a href="{{ url_for('permissions.matrix') }}" class="btn fsi-button-secondary">
+    <i class="bi bi-grid-3x3"></i> Permission Matrix
+  </a>
+</div>
+
+{% if distribution_lists %}
+<div class="table-responsive mb-4">
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Name</th>
+        <th>Email Address</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for dl in distribution_lists %}
+      <tr>
+        <td class="fw-semibold">{{ dl.name }}</td>
+        <td>{{ dl.email_address or '—' }}</td>
+        <td class="text-muted small">{{ dl.description or '' }}</td>
+        <td>
+          {% if dl.is_active %}
+          <span class="fsi-badge fsi-status-badge-available">Active</span>
+          {% else %}
+          <span class="fsi-badge fsi-status-badge-retired">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm fsi-button-secondary"
+                    onclick="openEditModal({{ dl.id }}, '{{ dl.name | e }}', '{{ dl.email_address or '' | e }}', '{{ dl.description or '' | e }}')"
+            >Edit</button>
+            {% if dl.is_active %}
+            <form method="post" action="{{ url_for('permissions.delete_distribution_list', dl_id=dl.id) }}"
+                  onsubmit="return confirm('Deactivate this distribution list?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No distribution lists yet.</p>
+{% endif %}
+
+<div class="fsi-card p-4">
+  <h5 class="mb-3">Add Distribution List</h5>
+  <form method="post" action="{{ url_for('permissions.create_distribution_list') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" required placeholder="All Staff" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Email Address</label>
+        <input type="email" name="email_address" class="form-control" placeholder="allstaff@freightservices.net" />
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Description</label>
+        <input type="text" name="description" class="form-control" placeholder="Optional description" />
+      </div>
+    </div>
+    <button type="submit" class="btn fsi-button-primary mt-3">Add Distribution List</button>
+  </form>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editDlModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editDlForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Distribution List</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editDlName" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email Address</label>
+            <input type="email" name="email_address" id="editDlEmail" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <input type="text" name="description" id="editDlDesc" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn fsi-button-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn fsi-button-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditModal(id, name, email, desc) {
+  document.getElementById('editDlName').value = name;
+  document.getElementById('editDlEmail').value = email;
+  document.getElementById('editDlDesc').value = desc;
+  document.getElementById('editDlForm').action = '/permissions/distribution-lists/' + id + '/edit';
+  new bootstrap.Modal(document.getElementById('editDlModal')).show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Permission Matrix{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0">Permission Matrix</h1>
+    <p class="text-muted mb-0 small">Check which email distribution lists and file shares apply to each role. Changes save automatically.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('permissions.list_distribution_lists') }}" class="btn fsi-button-secondary">
+      <i class="bi bi-envelope"></i> Manage DLs
+    </a>
+    <a href="{{ url_for('permissions.list_file_shares') }}" class="btn fsi-button-secondary">
+      <i class="bi bi-folder2-open"></i> Manage Shares
+    </a>
+  </div>
+</div>
+
+{% if not distribution_lists and not file_shares %}
+<div class="alert alert-info">
+  No distribution lists or file shares defined yet.
+  <a href="{{ url_for('permissions.list_distribution_lists') }}">Add a distribution list</a> or
+  <a href="{{ url_for('permissions.list_file_shares') }}">add a file share</a> to get started.
+</div>
+{% else %}
+<div class="table-responsive">
+  <table class="table table-bordered align-middle text-center" id="permission-matrix">
+    <thead class="table-dark">
+      <tr>
+        <th class="text-start" style="min-width: 220px;">Permission</th>
+        {% for role in roles %}
+        <th>{{ role.role_profile | capitalize }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+
+      {% if distribution_lists %}
+      <tr class="table-secondary">
+        <td class="text-start fw-semibold small text-uppercase" colspan="{{ roles | length + 1 }}">
+          <i class="bi bi-envelope-at me-1"></i>Email Distribution Lists
+        </td>
+      </tr>
+      {% for dl in distribution_lists %}
+      <tr>
+        <td class="text-start">
+          <div class="fw-semibold small">{{ dl.name }}</div>
+          {% if dl.email_address %}<div class="text-muted" style="font-size:.8rem;">{{ dl.email_address }}</div>{% endif %}
+        </td>
+        {% for role in roles %}
+        <td>
+          <input type="checkbox" class="form-check-input permission-checkbox" style="width:1.2em;height:1.2em;"
+                 data-type="distribution_list"
+                 data-item-id="{{ dl.id }}"
+                 data-role-id="{{ role.id }}"
+                 {% if assignments.get(role.id, {}).get('dl_ids') and dl.id in assignments[role.id]['dl_ids'] %}checked{% endif %}
+          />
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      {% endif %}
+
+      {% if file_shares %}
+      <tr class="table-secondary">
+        <td class="text-start fw-semibold small text-uppercase" colspan="{{ roles | length + 1 }}">
+          <i class="bi bi-folder2-open me-1"></i>File Share Permissions
+        </td>
+      </tr>
+      {% for share in file_shares %}
+      <tr>
+        <td class="text-start">
+          <div class="fw-semibold small">{{ share.name }}</div>
+          <div class="d-flex gap-1 mt-1">
+            <span class="fsi-badge">{{ share.access_level }}</span>
+            {% if share.share_path %}<span class="text-muted" style="font-size:.75rem;">{{ share.share_path }}</span>{% endif %}
+          </div>
+        </td>
+        {% for role in roles %}
+        <td>
+          <input type="checkbox" class="form-check-input permission-checkbox" style="width:1.2em;height:1.2em;"
+                 data-type="file_share"
+                 data-item-id="{{ share.id }}"
+                 data-role-id="{{ role.id }}"
+                 {% if assignments.get(role.id, {}).get('share_ids') and share.id in assignments[role.id]['share_ids'] %}checked{% endif %}
+          />
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      {% endif %}
+
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var CSRF = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+  document.querySelectorAll('.permission-checkbox').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      var orig = cb.checked;
+      cb.disabled = true;
+
+      fetch('{{ url_for("permissions.toggle_role_assignment") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF,
+        },
+        body: JSON.stringify({
+          type: cb.dataset.type,
+          item_id: parseInt(cb.dataset.itemId),
+          role_matrix_id: parseInt(cb.dataset.roleId),
+          assigned: orig,
+        }),
+      })
+        .then(function (r) {
+          if (!r.ok) {
+            cb.checked = !orig;
+          }
+        })
+        .catch(function () {
+          cb.checked = !orig;
+        })
+        .finally(function () {
+          cb.disabled = false;
+        });
+    });
+  });
+})();
+</script>
+{% endblock %}

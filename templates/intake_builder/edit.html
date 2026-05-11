@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Edit Question{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="d-flex align-items-center mb-3">
+      <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary me-3">
+        <i class="bi bi-arrow-left"></i> Board
+      </a>
+      <h1 class="h4 mb-0">Edit Question</h1>
+    </div>
+
+    <div class="fsi-card p-4">
+      <form method="post" action="{{ url_for('intake_builder.update_question', q_id=question.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Intake Step <span class="text-danger">*</span></label>
+          <select name="intake_step" class="form-select" required>
+            {% for num, label in [(1, 'Step 1 — Event Details'), (2, 'Step 2 — Role & Hierarchy'), (3, 'Step 3 — Hardware'), (4, 'Step 4 — Telecom')] %}
+            <option value="{{ num }}" {{ 'selected' if question.intake_step == num }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Role Profile <span class="text-danger">*</span></label>
+          <select name="role_profile" class="form-select" required>
+            {% for rp in ['office', 'driver', 'manager', 'warehouse', 'contractor', 'offboarding', 'all'] %}
+            <option value="{{ rp }}" {{ 'selected' if question.role_profile == rp }}>{{ rp | capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Question Key <span class="text-danger">*</span></label>
+          <input type="text" name="question_key" class="form-control" required
+                 value="{{ question.question_key }}"
+                 pattern="[a-z0-9_]+" title="Lowercase letters, numbers, underscores only" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Prompt / Question Text <span class="text-danger">*</span></label>
+          <textarea name="prompt" class="form-control" rows="2" required>{{ question.prompt }}</textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Field Type <span class="text-danger">*</span></label>
+          <select name="field_type" class="form-select" data-field-type-select required>
+            {% for ft in ['boolean', 'text', 'textarea', 'select', 'date', 'number'] %}
+            <option value="{{ ft }}" {{ 'selected' if question.field_type == ft }}>{{ ft }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3" data-field-options-row
+             style="{{ '' if question.field_type == 'select' else 'display:none;' }}">
+          <label class="form-label fw-semibold">Dropdown Options</label>
+          <textarea name="field_options" class="form-control" rows="2"
+                    placeholder='["Option A", "Option B"]'>{{ question.field_options or '' }}</textarea>
+          <div class="form-text">JSON array of strings.</div>
+        </div>
+
+        <div class="mb-3 form-check">
+          <input type="checkbox" name="is_required" class="form-check-input" id="edit_is_required"
+                 {{ 'checked' if question.is_required }} />
+          <label class="form-check-label" for="edit_is_required">Required field</label>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Sort Order</label>
+          <input type="number" name="sort_order" class="form-control"
+                 value="{{ question.sort_order }}" min="0" />
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn fsi-button-primary">Save Changes</button>
+          <a href="{{ url_for('intake_builder.board') }}" class="btn fsi-button-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var sel = document.querySelector('[data-field-type-select]');
+  var row = document.querySelector('[data-field-options-row]');
+  if (sel && row) {
+    sel.addEventListener('change', function () {
+      row.style.display = sel.value === 'select' ? '' : 'none';
+    });
+  }
+})();
+</script>
+{% endblock %}

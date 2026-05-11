@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Intake Question Builder{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js" />
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0">Intake Question Builder</h1>
+    <p class="text-muted mb-0 small">Drag questions between steps to reorder. Changes save automatically.</p>
+  </div>
+  <button class="btn fsi-button-primary" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+    <i class="bi bi-plus-lg"></i> Add Question
+  </button>
+</div>
+
+<div class="row g-3 mb-4">
+  {% set step_labels = {
+    1: 'Step 1: Event Details',
+    2: 'Step 2: Role &amp; Hierarchy',
+    3: 'Step 3: Hardware',
+    4: 'Step 4: Telecom'
+  } %}
+  {% for step_num in [1, 2, 3, 4] %}
+  <div class="col-md-3">
+    <div class="card h-100 border">
+      <div class="card-header fw-semibold small text-uppercase">
+        {{ step_labels[step_num] | safe }}
+      </div>
+      <div class="card-body p-2 qb-step-column" data-step="{{ step_num }}" style="min-height: 220px;">
+        {% for q in step_questions.get(step_num, []) %}
+        <div class="fsi-card qb-card p-3 mb-2" data-id="{{ q.id }}" style="cursor: grab;">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="flex-grow-1">
+              <p class="mb-2 small fw-semibold lh-sm">{{ q.prompt }}</p>
+              <div class="d-flex gap-1 flex-wrap">
+                <span class="fsi-badge">{{ q.role_profile }}</span>
+                <span class="fsi-badge">{{ q.field_type }}</span>
+                {% if q.is_required %}<span class="fsi-badge" title="Required">&#9733; required</span>{% endif %}
+              </div>
+            </div>
+            <div class="d-flex flex-column gap-1 flex-shrink-0">
+              <a href="{{ url_for('intake_builder.edit_question_form', q_id=q.id) }}"
+                 class="btn btn-sm fsi-button-secondary" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="{{ url_for('intake_builder.delete_question', q_id=q.id) }}"
+                    onsubmit="return confirm('Deactivate this question from the intake form?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100" title="Deactivate">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted small text-center mt-4 mb-0"><em>No questions yet. Drag one here or add a new one.</em></p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Add Question Modal -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1"
+     aria-labelledby="addQuestionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('intake_builder.create_question') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="modal-header">
+          <h5 class="modal-title" id="addQuestionModalLabel">Add Question</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Intake Step <span class="text-danger">*</span></label>
+            <select name="intake_step" class="form-select" required>
+              <option value="1">Step 1 &mdash; Event Details</option>
+              <option value="2" selected>Step 2 &mdash; Role &amp; Hierarchy</option>
+              <option value="3">Step 3 &mdash; Hardware</option>
+              <option value="4">Step 4 &mdash; Telecom</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Role Profile <span class="text-danger">*</span></label>
+            <select name="role_profile" class="form-select" required>
+              <option value="office">Office / Ops</option>
+              <option value="driver">Driver</option>
+              <option value="manager">Manager</option>
+              <option value="warehouse">Warehouse</option>
+              <option value="contractor">Contractor</option>
+              <option value="offboarding">Offboarding</option>
+              <option value="all">All Roles</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Question Key <span class="text-danger">*</span></label>
+            <input type="text" name="question_key" class="form-control" required
+                   placeholder="e.g. needs_vpn_access" pattern="[a-z0-9_]+"
+                   title="Lowercase letters, numbers, underscores only" />
+            <div class="form-text">Unique slug used as the form field name. Lowercase, underscores only.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Prompt / Question Text <span class="text-danger">*</span></label>
+            <textarea name="prompt" class="form-control" rows="2" required
+                      placeholder="Does this employee need VPN access?"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Field Type <span class="text-danger">*</span></label>
+            <select name="field_type" class="form-select" data-field-type-select required>
+              <option value="boolean" selected>Yes / No (boolean)</option>
+              <option value="text">Short Text</option>
+              <option value="textarea">Long Text</option>
+              <option value="select">Dropdown / Select</option>
+              <option value="date">Date</option>
+              <option value="number">Number</option>
+            </select>
+          </div>
+
+          <div class="mb-3" data-field-options-row style="display:none;">
+            <label class="form-label fw-semibold">Dropdown Options</label>
+            <textarea name="field_options" class="form-control" rows="2"
+                      placeholder='["Option A", "Option B", "Option C"]'></textarea>
+            <div class="form-text">JSON array of strings, one per selectable choice.</div>
+          </div>
+
+          <div class="mb-3 form-check">
+            <input type="checkbox" name="is_required" class="form-check-input" id="modal_is_required" />
+            <label class="form-check-label" for="modal_is_required">Required field</label>
+          </div>
+
+          <div class="mb-1">
+            <label class="form-label fw-semibold">Sort Order</label>
+            <input type="number" name="sort_order" class="form-control" value="10" min="0" />
+            <div class="form-text">Lower numbers appear first within the step. Drag to adjust after saving.</div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn fsi-button-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn fsi-button-primary">Save Question</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/question_builder.js') }}"></script>
+{% endblock %}

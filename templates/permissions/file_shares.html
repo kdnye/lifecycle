@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}File Share Permissions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-0">File Share Permissions</h1>
+    <p class="text-muted mb-0 small">Manage file server shares assigned to roles in the permission matrix.</p>
+  </div>
+  <a href="{{ url_for('permissions.matrix') }}" class="btn fsi-button-secondary">
+    <i class="bi bi-grid-3x3"></i> Permission Matrix
+  </a>
+</div>
+
+{% if file_shares %}
+<div class="table-responsive mb-4">
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Name</th>
+        <th>Share Path</th>
+        <th>Access Level</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for share in file_shares %}
+      <tr>
+        <td class="fw-semibold">{{ share.name }}</td>
+        <td><code>{{ share.share_path or '—' }}</code></td>
+        <td><span class="fsi-badge">{{ share.access_level }}</span></td>
+        <td class="text-muted small">{{ share.description or '' }}</td>
+        <td>
+          {% if share.is_active %}
+          <span class="fsi-badge fsi-status-badge-available">Active</span>
+          {% else %}
+          <span class="fsi-badge fsi-status-badge-retired">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm fsi-button-secondary"
+                    onclick="openEditModal({{ share.id }}, '{{ share.name | e }}', '{{ share.share_path or '' | e }}', '{{ share.access_level | e }}', '{{ share.description or '' | e }}')"
+            >Edit</button>
+            {% if share.is_active %}
+            <form method="post" action="{{ url_for('permissions.delete_file_share', share_id=share.id) }}"
+                  onsubmit="return confirm('Deactivate this file share?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No file shares yet.</p>
+{% endif %}
+
+<div class="fsi-card p-4">
+  <h5 class="mb-3">Add File Share</h5>
+  <form method="post" action="{{ url_for('permissions.create_file_share') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" required placeholder="Accounting Drive" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Share Path</label>
+        <input type="text" name="share_path" class="form-control" placeholder="\\server\Accounting" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold">Access Level</label>
+        <select name="access_level" class="form-select">
+          <option value="Read" selected>Read</option>
+          <option value="Write">Write</option>
+          <option value="Modify">Modify</option>
+          <option value="Full">Full</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Description</label>
+        <input type="text" name="description" class="form-control" placeholder="Optional description" />
+      </div>
+    </div>
+    <button type="submit" class="btn fsi-button-primary mt-3">Add File Share</button>
+  </form>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editShareModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="editShareForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="modal-header">
+          <h5 class="modal-title">Edit File Share</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editShareName" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Share Path</label>
+            <input type="text" name="share_path" id="editSharePath" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Access Level</label>
+            <select name="access_level" id="editShareAccess" class="form-select">
+              <option value="Read">Read</option>
+              <option value="Write">Write</option>
+              <option value="Modify">Modify</option>
+              <option value="Full">Full</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <input type="text" name="description" id="editShareDesc" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn fsi-button-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn fsi-button-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditModal(id, name, path, access, desc) {
+  document.getElementById('editShareName').value = name;
+  document.getElementById('editSharePath').value = path;
+  document.getElementById('editShareDesc').value = desc;
+  var sel = document.getElementById('editShareAccess');
+  for (var i = 0; i < sel.options.length; i++) {
+    sel.options[i].selected = sel.options[i].value === access;
+  }
+  document.getElementById('editShareForm').action = '/permissions/file-shares/' + id + '/edit';
+  new bootstrap.Modal(document.getElementById('editShareModal')).show();
+}
+</script>
+{% endblock %}
