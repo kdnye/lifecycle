@@ -1,4 +1,5 @@
 import sys
+import os
 from pathlib import Path
 
 from flask import Flask
@@ -6,7 +7,7 @@ from flask import Flask
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app import create_app
-from app.models import IntakeRequest, db
+from app.models import IntakeAnswer, IntakeRequest, QuestionMatrix, db
 from app.routes.intake import intake_bp
 from services.intake_dispatch import process_intake_dispatch
 from services.workflow import execute_lifecycle_event
@@ -20,6 +21,7 @@ def _build_test_client():
 
 
 def _build_db_test_client():
+    os.environ["DATABASE_URL"] = "sqlite:////tmp/lifecycle_test_intake.db"
     app = create_app()
     app.config.update(TESTING=True, SERVER_NAME="localhost")
     with app.app_context():
@@ -117,3 +119,62 @@ def test_offboarding_waits_for_approval_before_execution(monkeypatch):
         updated = IntakeRequest.query.filter_by(approval_token=token).first()
         assert updated is not None
         assert updated.status == "processed"
+
+
+def test_intake_form_context_includes_step_questions():
+    client, app = _build_db_test_client()
+    with app.app_context():
+        db.session.add(
+            QuestionMatrix(
+                role_profile="office",
+                question_key="office_needs_badge",
+                prompt="Needs badge?",
+                intake_step=2,
+                sort_order=5,
+                is_active=True,
+            )
+        )
+        db.session.commit()
+
+    response = client.get("/intake/")
+    assert response.status_code == 200
+    assert b"Needs badge?" in response.data
+
+
+def test_process_persists_dynamic_answers_to_intake_answer(monkeypatch):
+    client, app = _build_db_test_client()
+    monkeypatch.setattr("services.workflow.send_templated_email", lambda **_: True)
+
+    with app.app_context():
+        question = QuestionMatrix(
+            role_profile="office",
+            question_key="needs_special_access",
+            prompt="Needs special access?",
+            intake_step=1,
+            sort_order=1,
+            is_active=True,
+        )
+        db.session.add(question)
+        db.session.commit()
+        question_id = question.id
+
+    payload = {
+        "status": "submitted",
+        "event_type": "onboarding",
+        "first_name": "Ada",
+        "last_name": "Lovelace",
+        "start_date": "2026-05-02",
+        "role_profile": "office",
+        "manager_email": "manager@example.com",
+        "dynamic_needs_special_access": " yes ",
+    }
+    response = client.post("/intake/process", json=payload)
+    assert response.status_code == 202
+
+    with app.app_context():
+        intake = IntakeRequest.query.order_by(IntakeRequest.id.desc()).first()
+        assert intake is not None
+        answers = IntakeAnswer.query.filter_by(intake_request_id=intake.id).all()
+        assert len(answers) == 1
+        assert answers[0].question_matrix_id == question_id
+        assert answers[0].answer_value == "yes"
