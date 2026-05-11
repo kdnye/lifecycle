@@ -6,7 +6,6 @@ from flask import Flask, g, jsonify, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate
-from flask_migrate import upgrade as migrate_upgrade
 from flask_wtf.csrf import CSRFProtect
 
 from app.config import load_settings, validate_production_settings
@@ -107,8 +106,6 @@ def create_app() -> Flask:
         # Inventory / storage
         ASSET_PHOTOS_BUCKET=settings.asset_photos_bucket,
         MAIL_SUPPRESS_SEND=settings.mail_suppress_send,
-        MIGRATE_ON_STARTUP=os.getenv("MIGRATE_ON_STARTUP", "false").strip().lower()
-        in {"1", "true", "yes"},
         # Rate limiting
         RATELIMIT_ENABLED=not is_test,
     )
@@ -210,16 +207,5 @@ def create_app() -> Flask:
         return _error_response(
             500, "Internal Server Error", "An unexpected error occurred. Please try again later."
         )
-
-    if app.config.get("MIGRATE_ON_STARTUP"):
-        try:
-            with app.app_context():
-                migrate_upgrade()
-        except Exception as exc:
-            startup_issues = app.config.setdefault("STARTUP_ISSUES", [])
-            startup_issues.append(
-                "Startup migration failed. Run `flask db upgrade` and review Alembic logs."
-            )
-            app.logger.exception("MIGRATE_ON_STARTUP failed", extra={"error": str(exc)})
 
     return app
