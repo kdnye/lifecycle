@@ -69,10 +69,10 @@ def login():
 
         try:
             user = User.query.filter_by(email=email).first()
-        except SQLAlchemyError as exc:
-            current_app.logger.exception("login_user_lookup_failed", extra={"email": email, "error": str(exc)})
-            message = "Authentication service is temporarily unavailable."
-            remediation = "Verify shared users schema and database connectivity, then retry."
+        except SQLAlchemyError:
+            current_app.logger.exception("login_user_lookup_failed")
+            message = _("Authentication service is temporarily unavailable.")
+            remediation = _("Verify shared users schema and database connectivity, then retry.")
             if is_json_request:
                 return jsonify({"status": "error", "message": message, "remediation": remediation}), 503
             flash(message, "error")
