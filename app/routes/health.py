@@ -56,8 +56,12 @@ def readyz():
         COMMUNICATION_OPTIONS_TABLE,
     ]
     required_columns = {
-        USERS_TABLE: ["id", "email", "password_hash", "can_manage_lifecycle"],
+        ROLE_MATRIX_TABLE: ["id", "role_profile", "m365_plan", "hardware_default", "vpn_policy"],
+        QUESTION_MATRIX_TABLE: ["id", "role_profile", "question_key", "prompt", "is_required"],
+        ACTION_MATRIX_TABLE: ["id", "intake_condition", "action_name", "target_system"],
         INTAKE_REQUEST_TABLE: ["id", "first_name", "last_name", "role_profile", "event_type"],
+        USERS_TABLE: ["id", "email", "password_hash", "can_manage_lifecycle"],
+        COMMUNICATION_OPTIONS_TABLE: ["id", "it_support_email", "it_sales_email", "telecon_sales_email"],
     }
 
     missing_tables: list[str] = []
