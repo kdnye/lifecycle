@@ -1,30 +1,6 @@
-"""Dashboard service functions for lifecycle pipeline visibility."""
+"""Backward-compatible exports for dashboard service.
 
-from sqlalchemy import func
+Business logic is centralized in :mod:`app.services.dashboard`.
+"""
 
-from app.models import IntakeRequest, db
-
-
-def get_dashboard_metrics() -> dict:
-    """Return aggregate status counts and recent intake request activity."""
-    try:
-        status_rows = (
-            db.session.query(IntakeRequest.status, func.count(IntakeRequest.id))
-            .group_by(IntakeRequest.status)
-            .all()
-        )
-
-        status_counts = {status: count for status, count in status_rows}
-        recent_activity = IntakeRequest.query.order_by(IntakeRequest.id.desc()).limit(10).all()
-        db_issue = None
-    except Exception as exc:  # dashboard should degrade gracefully instead of returning HTTP 500
-        db.session.rollback()
-        db_issue = str(exc)
-        status_counts = {}
-        recent_activity = []
-
-    return {
-        "status_counts": status_counts,
-        "recent_activity": recent_activity,
-        "db_issue": db_issue,
-    }
+from app.services.dashboard import *  # noqa: F403
