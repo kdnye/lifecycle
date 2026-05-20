@@ -23,7 +23,17 @@ auth_bp = Blueprint("auth", __name__)
 
 def _validate_email_format(form, field):
     value = str(field.data or "").strip()
-    if not value or "@" not in value or value.startswith("@") or value.endswith("@"):
+    try:
+        local_part, domain_part = value.split('@')
+    except ValueError:
+        # Handles no '@' or more than one '@'
+        raise ValidationError("Please provide a valid email address.")
+
+    if not local_part or not domain_part:
+        # Handles email starting or ending with '@'
+        raise ValidationError("Please provide a valid email address.")
+
+    if '.' not in domain_part or domain_part.startswith('.') or domain_part.endswith('.'):
         raise ValidationError("Please provide a valid email address.")
 
 
