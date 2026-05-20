@@ -52,6 +52,29 @@ def test_postmark_webhook_rejects_unauthorized_request(monkeypatch):
     assert response.status_code == 401
 
 
+
+
+def test_postmark_webhook_legacy_alias_matches_canonical_auth_behavior(monkeypatch):
+    monkeypatch.setenv("POSTMARK_WEBHOOK_TOKEN", "webhook-secret")
+
+    client, app = _build_db_test_client()
+    payload = {"Subject": "Device Intake [RequestID: 8]", "TextBody": "Serial Number: SN-ALIAS"}
+
+    canonical = client.post(
+        "/api/webhooks/postmark-inbound",
+        headers={"X-Postmark-Token": "wrong-token"},
+        json=payload,
+    )
+    legacy = client.post(
+        "/api/webhooks/inbound-postmark",
+        headers={"X-Postmark-Token": "wrong-token"},
+        json=payload,
+    )
+
+    assert canonical.status_code == 401
+    assert legacy.status_code == 401
+    assert canonical.get_json() == legacy.get_json()
+
 def test_postmark_webhook_ignores_payload_without_serial(monkeypatch):
     monkeypatch.setenv("POSTMARK_WEBHOOK_TOKEN", "webhook-secret")
 
