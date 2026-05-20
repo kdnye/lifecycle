@@ -79,7 +79,7 @@ Full asset lifecycle management at `/inventory`:
 - **Photos:** Upload to GCS (`ASSET_PHOTOS_BUCKET` required)
 - **Scanner:** Barcode/QR via camera (html5-qrcode) + BLE tags (Web Bluetooth — Chrome/Edge + HTTPS)
 - **Status tracking:** Available, Assigned, In_Repair, Retired, Lost
-- **Email intake:** Postmark inbound webhook at `POST /api/webhooks/postmark-inbound` parses serial numbers from email bodies
+- **Email intake:** Canonical Postmark inbound webhook is `POST /api/webhooks/postmark-inbound` (configure this exact path in Postmark UI and runbooks). Legacy alias `POST /api/webhooks/inbound-postmark` remains supported for backward compatibility and enforces identical `X-Postmark-Token` auth.
 
 ## Tests
 

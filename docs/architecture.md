@@ -58,7 +58,7 @@
 | `dashboard_bp` | `` | Homepage / intake activity metrics |
 | `intake_bp` | `` | Intake form, approval/rejection flow |
 | `internal_bp` | `/internal` | Cron-triggered lifecycle execution (shared secret auth) |
-| `webhooks_bp` | `/api/webhooks` | Postmark inbound email → inventory record |
+| `webhooks_bp` | `/api/webhooks` | Postmark inbound email → inventory record (canonical: `/api/webhooks/postmark-inbound`; legacy alias: `/api/webhooks/inbound-postmark`) |
 | `inventory_bp` | `/inventory` | Full inventory CRUD + scanner + photo upload |
 | `health_bp` | `` | `/healthz`, `/readyz` for Cloud Run probes |
 | `help_bp` | `/help` | Static help docs |

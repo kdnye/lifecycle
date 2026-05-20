@@ -11,8 +11,10 @@ REQUEST_ID_PATTERN = re.compile(r"\[RequestID:\s*(\d+)\]")
 
 webhooks_bp = Blueprint("webhooks", __name__, url_prefix="/api/webhooks")
 
+CANONICAL_POSTMARK_INBOUND_PATH = "/api/webhooks/postmark-inbound"
 
 @webhooks_bp.post("/postmark-inbound")
+@webhooks_bp.post("/inbound-postmark")
 def inbound_postmark():
     is_production = bool(current_app.config.get("FSI_PRODUCTION"))
     configured_token = current_app.config.get("POSTMARK_WEBHOOK_TOKEN")
@@ -21,7 +23,7 @@ def inbound_postmark():
     if is_production and not configured_token:
         current_app.logger.error(
             "webhook_auth_missing_configuration",
-            extra={"route": "/api/webhooks/postmark-inbound"},
+            extra={"route": CANONICAL_POSTMARK_INBOUND_PATH},
         )
         return (
             jsonify(
