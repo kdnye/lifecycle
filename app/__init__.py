@@ -7,6 +7,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import load_settings, validate_production_settings
 from app.auth_utils import attach_current_user
@@ -207,6 +208,21 @@ def create_app() -> Flask:
     def internal_error(e):
         return _error_response(
             500, "Internal Server Error", "An unexpected error occurred. Please try again later."
+        )
+
+    @app.errorhandler(SQLAlchemyError)
+    def database_error(e):
+        app.logger.exception("Database error while serving request.", extra={"path": request.path})
+        return (
+            jsonify(
+                {
+                    "status": "unready",
+                    "guidance": "Database schema is missing required objects or currently unavailable. "
+                    "Run `flask db upgrade` (or `alembic upgrade head`) and verify `/readyz`.",
+                    "error_type": type(e).__name__,
+                }
+            ),
+            503,
         )
 
     return app
