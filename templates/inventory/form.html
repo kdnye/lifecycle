@@ -68,10 +68,11 @@
         <label for="category_id" class="form-label">Category</label>
         <select id="category_id" name="category_id" class="form-select">
           <option value="">None</option>
-          {% for cat in categories %}
+          {% for item in categories %}
+            {% set cat = item.category %}
             <option value="{{ cat.id }}"
               {% if asset and asset.category_id == cat.id %}selected{% endif %}>
-              {% if cat.parent_category_id %}&#8212; {% endif %}{{ cat.name }}
+              {{ ("— " * item.depth) ~ cat.name }}
             </option>
           {% endfor %}
         </select>

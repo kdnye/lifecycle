@@ -48,7 +48,7 @@ def list_assets():
 @inventory_bp.get("/new")
 @login_required
 def new_asset_form():
-    categories = inventory_service.list_categories()
+    categories = inventory_service.list_categories_hierarchical()
     return render_template(
         "inventory/form.html",
         asset=None,
@@ -85,7 +85,7 @@ def edit_asset_form(asset_id: int):
     asset = inventory_service.get_asset_by_id(asset_id)
     if asset is None:
         abort(404)
-    categories = inventory_service.list_categories()
+    categories = inventory_service.list_categories_hierarchical()
     return render_template(
         "inventory/form.html",
         asset=asset,

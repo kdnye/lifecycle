@@ -157,6 +157,24 @@ def get_category_tree() -> list[dict]:
     return _build(None)
 
 
+def list_categories_hierarchical(active_only: bool = True) -> list[dict]:
+    """Return categories ordered by hierarchy for dropdown rendering."""
+    all_cats = list_categories(active_only=active_only)
+    by_parent: dict = {}
+    for cat in all_cats:
+        by_parent.setdefault(cat.parent_category_id, []).append(cat)
+
+    flattened: list[dict] = []
+
+    def _walk(parent_id: int | None, depth: int) -> None:
+        for cat in by_parent.get(parent_id, []):
+            flattened.append({"category": cat, "depth": depth})
+            _walk(cat.id, depth + 1)
+
+    _walk(None, 0)
+    return flattened
+
+
 def create_category(
     name: str, parent_id: Optional[int] = None
 ) -> AssetCategory:
