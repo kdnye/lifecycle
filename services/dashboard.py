@@ -1,6 +1,10 @@
-"""Backward-compatible exports for dashboard service.
+"""Backward-compatible module alias for dashboard service.
 
 Business logic is centralized in :mod:`app.services.dashboard`.
 """
 
-from app.services.dashboard import *  # noqa: F403
+import sys
+
+from app.services import dashboard as _dashboard
+
+sys.modules[__name__] = _dashboard
