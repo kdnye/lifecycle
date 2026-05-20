@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Admin Hardware Queue · FSI Lifecycle{% endblock %}
+
+{% block content %}
+<h1 class="fsi-display mb-3">Admin Hardware Queue</h1>
+<p class="lead mb-4">Review flagged hardware tickets and resolve items that are ready to close.</p>
+
+{% if flagged_tickets %}
+  <section class="card">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Flagged Tickets</h2>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Ticket ID</th>
+              <th scope="col">Employee</th>
+              <th scope="col">Issue</th>
+              <th scope="col">Flagged At</th>
+              <th scope="col" class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in flagged_tickets %}
+              <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.employee_name or ticket.requested_for or 'Unknown' }}</td>
+                <td>{{ ticket.flag_reason or ticket.issue_summary or 'Needs review' }}</td>
+                <td>{{ ticket.flagged_at or ticket.created_at }}</td>
+                <td class="text-end">
+                  <form method="post" action="{{ url_for('internal.resolve_hardware') }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <input type="hidden" name="ticket_id" value="{{ ticket.id }}" />
+                    <button type="submit" class="btn btn-sm fsi-button-primary">Resolve</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+{% else %}
+  <section class="alert alert-success" role="status">
+    <h2 class="h5 mb-1">Queue is clear</h2>
+    <p class="mb-0">No flagged hardware tickets require action right now.</p>
+  </section>
+{% endif %}
+{% endblock %}
