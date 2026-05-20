@@ -70,6 +70,21 @@ flask db upgrade
 python scripts/seeds.py
 ```
 
+### Offline SQL Generation for Manual Production Patching
+
+If you need a reviewable SQL script (for example, to run in Cloud SQL Studio) and do **not** want Cloud Shell to connect directly to the database, use Alembic offline mode:
+
+```bash
+# Example: render SQL from a specific revision to head
+flask db upgrade 20260511_05:head --sql > final_production_updates.sql
+```
+
+Notes:
+
+- This command renders SQL from migration files only (`--sql`) and does not require a live database connection.
+- Review the generated SQL before execution, especially the final `alembic_version` statement, and verify it matches your intended target revision.
+- If `/readyz` reports missing tables/columns after applying SQL, verify Cloud Run `DATABASE_URL` points to the same instance/database you patched in Cloud SQL Studio.
+
 ## Inventory Module
 
 Full asset lifecycle management at `/inventory`:
