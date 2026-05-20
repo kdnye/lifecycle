@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Hardware Review{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="fsi-display mb-3">Hardware Review</h1>
+  <p class="text-muted">Resolve requests currently in <strong>Needs Manual Review</strong> by assigning a normalized serial number.</p>
+
+  {% if requests %}
+  <form method="post" action="{{ url_for('internal.resolve_hardware_review_route') }}" class="card p-3">
+    <div class="mb-3">
+      <label class="form-label" for="intake_request_id">Intake request</label>
+      <select class="form-select" id="intake_request_id" name="intake_request_id" required>
+        <option value="">Select request</option>
+        {% for req in requests %}
+        <option value="{{ req.id }}">#{{ req.id }} — {{ req.first_name }} {{ req.last_name }} ({{ req.role_profile }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="serial_number">Serial number</label>
+      <input class="form-control" id="serial_number" name="serial_number" required />
+      <div class="form-text">Letters, numbers, and dashes only. Input is normalized server-side.</div>
+    </div>
+    <button class="btn btn-primary" type="submit">Mark as Hardware Provisioned</button>
+  </form>
+  {% else %}
+  <div class="alert alert-info">No intake requests currently require manual hardware review.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import secrets
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, abort, current_app, flash, g, jsonify, redirect, render_template, request, url_for
 
+from app.services.hardware_review_service import (
+    HardwareReviewValidationError,
+    list_manual_review_requests,
+    resolve_hardware_review,
+)
 from app.services.internal_automation import process_due_terminations
 
 
@@ -47,3 +52,34 @@ def process_terminations_cron():
 
     result = process_due_terminations()
     return jsonify(result), 200
+
+
+def _require_internal_admin() -> None:
+    user = getattr(g, "current_user", None)
+    if user is None:
+        abort(401)
+    if not getattr(user, "can_manage_lifecycle", False):
+        abort(403)
+
+
+@internal_bp.get("/hardware-review")
+def hardware_review():
+    _require_internal_admin()
+    requests = list_manual_review_requests()
+    return render_template("internal/hardware_review.html", requests=requests)
+
+
+@internal_bp.post("/hardware-review/resolve")
+def resolve_hardware_review_route():
+    _require_internal_admin()
+    intake_request_id = request.form.get("intake_request_id", type=int)
+    serial_number = request.form.get("serial_number", "")
+
+    try:
+        intake, _ = resolve_hardware_review(intake_request_id, serial_number)
+    except HardwareReviewValidationError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("internal.hardware_review"))
+
+    flash(f"Hardware provisioned for request #{intake.id}.", "success")
+    return redirect(url_for("internal.hardware_review"))

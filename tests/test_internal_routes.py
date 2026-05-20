@@ -130,3 +130,116 @@ def test_internal_cron_auto_approves_hard_stop_contractors(monkeypatch):
     with app.app_context():
         updated = db.session.get(IntakeRequest, contractor_id)
         assert updated.status == "processed"
+
+
+def _login_manager(app, email: str = "admin@example.com"):
+    from app.auth_utils import set_authenticated_user
+    from app.models import User
+
+    with app.app_context():
+        user = User(email=email, can_manage_lifecycle=True, auth_provider="local", role="ADMIN")
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+
+    with app.test_request_context():
+        pass
+
+    return user_id
+
+
+def test_hardware_review_requires_admin_session():
+    client, _ = _build_db_test_client()
+
+    response = client.get("/api/internal/hardware-review")
+
+    assert response.status_code == 401
+
+
+def test_hardware_review_lists_manual_review_requests():
+    client, app = _build_db_test_client()
+
+    with app.app_context():
+        db.session.add_all([
+            IntakeRequest(first_name="A", last_name="One", role_profile="office", event_type="onboarding", status="Needs Manual Review"),
+            IntakeRequest(first_name="B", last_name="Two", role_profile="office", event_type="onboarding", status="approved"),
+        ])
+        from app.models import User
+
+        user = User(email="manager@example.com", can_manage_lifecycle=True, auth_provider="local", role="ADMIN")
+        user.set_password("pw")
+        db.session.add(user)
+        db.session.commit()
+        uid = user.id
+
+    with client.session_transaction() as sess:
+        sess["fsi_user_id"] = uid
+
+    response = client.get("/api/internal/hardware-review")
+
+    assert response.status_code == 200
+    assert b"Hardware Review" in response.data
+    assert b"#1" in response.data
+    assert b"#2" not in response.data
+
+
+def test_hardware_review_resolve_validates_and_flashes_error():
+    client, app = _build_db_test_client()
+
+    with app.app_context():
+        req = IntakeRequest(first_name="A", last_name="One", role_profile="office", event_type="onboarding", status="Needs Manual Review")
+        from app.models import User
+
+        user = User(email="manager2@example.com", can_manage_lifecycle=True, auth_provider="local", role="ADMIN")
+        user.set_password("pw")
+        db.session.add_all([req, user])
+        db.session.commit()
+        uid = user.id
+
+    with client.session_transaction() as sess:
+        sess["fsi_user_id"] = uid
+
+    response = client.post(
+        "/api/internal/hardware-review/resolve",
+        data={"intake_request_id": 1, "serial_number": ""},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Serial number is required." in response.data
+
+
+def test_hardware_review_resolve_updates_inventory_and_status():
+    client, app = _build_db_test_client()
+
+    with app.app_context():
+        req = IntakeRequest(first_name="A", last_name="One", role_profile="office", event_type="onboarding", status="Needs Manual Review")
+        from app.models import Inventory, User
+
+        user = User(email="manager3@example.com", can_manage_lifecycle=True, auth_provider="local", role="ADMIN")
+        user.set_password("pw")
+        db.session.add_all([req, user])
+        db.session.commit()
+        uid = user.id
+        req_id = req.id
+
+    with client.session_transaction() as sess:
+        sess["fsi_user_id"] = uid
+
+    response = client.post(
+        "/api/internal/hardware-review/resolve",
+        data={"intake_request_id": req_id, "serial_number": " ab-123 !! "},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Hardware provisioned for request" in response.data
+
+    with app.app_context():
+        from app.models import Inventory
+
+        updated = db.session.get(IntakeRequest, req_id)
+        linked = db.session.query(Inventory).filter(Inventory.intake_request_id == req_id).one()
+        assert updated.status == "Hardware Provisioned"
+        assert linked.serial_number == "AB-123"
