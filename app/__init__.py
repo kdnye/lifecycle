@@ -71,8 +71,9 @@ def create_app() -> Flask:
     engine_options: dict = {
         "pool_pre_ping": True,
         "pool_recycle": settings.pool_recycle,
-        "max_overflow": settings.pool_max_overflow,
     }
+    if effective_database_uri.startswith("postgresql"):
+        engine_options["max_overflow"] = settings.pool_max_overflow
     if effective_database_uri.startswith("postgresql+pg8000://"):
         engine_options["connect_args"] = {"timeout": 3}
     elif effective_database_uri.startswith("postgresql://"):

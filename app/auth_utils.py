@@ -4,6 +4,8 @@ from functools import wraps
 
 from flask import abort, g, redirect, request, session, url_for
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.models import User, db
 
 SESSION_USER_ID_KEY = "fsi_user_id"
@@ -13,7 +15,14 @@ def get_current_user() -> User | None:
     user_id = session.get(SESSION_USER_ID_KEY)
     if not user_id:
         return None
-    return db.session.get(User, user_id)
+    try:
+        user = db.session.get(User, user_id)
+    except SQLAlchemyError:
+        clear_authenticated_user()
+        return None
+    if user is None:
+        clear_authenticated_user()
+    return user
 
 
 def attach_current_user() -> None:
@@ -35,8 +44,8 @@ def login_required(view_func):
     return wrapped_view
 
 
-def set_authenticated_user(user: User) -> None:
-    session[SESSION_USER_ID_KEY] = user.id
+def set_authenticated_user(user_id: int) -> None:
+    session[SESSION_USER_ID_KEY] = int(user_id)
 
 
 def clear_authenticated_user() -> None:
