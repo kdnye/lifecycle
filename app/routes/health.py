@@ -55,12 +55,25 @@ def readyz():
         USERS_TABLE,
         COMMUNICATION_OPTIONS_TABLE,
     ]
+    required_columns = {
+        USERS_TABLE: ["id", "email", "password_hash", "can_manage_lifecycle"],
+        INTAKE_REQUEST_TABLE: ["id", "first_name", "last_name", "role_profile", "event_type"],
+    }
 
     missing_tables: list[str] = []
+    missing_columns: dict[str, list[str]] = {}
     try:
         inspector = inspect(db.engine)
         existing = set(inspector.get_table_names())
         missing_tables = [table for table in required_tables if table not in existing]
+
+        for table_name, columns in required_columns.items():
+            if table_name in missing_tables:
+                continue
+            present = {col["name"] for col in inspector.get_columns(table_name)}
+            missing_for_table = [col for col in columns if col not in present]
+            if missing_for_table:
+                missing_columns[table_name] = missing_for_table
     except Exception as exc:  # readiness must be actionable, never opaque
         return (
             jsonify(
@@ -73,13 +86,14 @@ def readyz():
             503,
         )
 
-    if missing_tables:
+    if missing_tables or missing_columns:
         return (
             jsonify(
                 {
                     "status": "unready",
                     "guidance": "Run `flask db upgrade` or `alembic upgrade head`.",
                     "missing_tables": missing_tables,
+                    "missing_columns": missing_columns,
                 }
             ),
             503,

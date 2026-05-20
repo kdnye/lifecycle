@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email
@@ -14,6 +14,7 @@ except ImportError:
 
 from app.auth_utils import clear_authenticated_user, get_current_user, set_authenticated_user
 from app.models import User
+from sqlalchemy.exc import SQLAlchemyError
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -66,7 +67,17 @@ def login():
         elif not form.validate_on_submit():
             return render_template("auth/login.html", form=form), 400
 
-        user = User.query.filter_by(email=email).first()
+        try:
+            user = User.query.filter_by(email=email).first()
+        except SQLAlchemyError as exc:
+            current_app.logger.exception("login_user_lookup_failed", extra={"email": email, "error": str(exc)})
+            message = "Authentication service is temporarily unavailable."
+            remediation = "Verify shared users schema and database connectivity, then retry."
+            if is_json_request:
+                return jsonify({"status": "error", "message": message, "remediation": remediation}), 503
+            flash(message, "error")
+            return render_template("auth/login.html", form=form), 503
+
         if user is None or not user.check_password(password):
             message = "Invalid email or password. Please try again."
             remediation = "Use your registered account credentials or contact an administrator."

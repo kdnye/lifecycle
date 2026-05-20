@@ -89,7 +89,10 @@ class User(db.Model):
     def check_password(self, raw_password: str) -> bool:
         if not self.password_hash:
             return False
-        return check_password_hash(self.password_hash, raw_password)
+        try:
+            return check_password_hash(self.password_hash, raw_password)
+        except (ValueError, TypeError):
+            return False
 
 
 class RoleMatrix(db.Model):
