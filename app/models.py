@@ -286,7 +286,12 @@ class Inventory(db.Model):
     model_name = db.Column(db.String(100), nullable=True)
     # State
     status = db.Column(
-        db.Enum(AssetStatus, name="asset_status"),
+        db.Enum(
+            AssetStatus,
+            name="asset_status",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            validate_strings=True,
+        ),
         nullable=False,
         default=AssetStatus.AVAILABLE,
     )
