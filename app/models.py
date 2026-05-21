@@ -64,6 +64,11 @@ class AssetStatus(str, enum.Enum):
     LOST      = "Lost"
 
 
+class AssetTrackingMode(str, enum.Enum):
+    SERIALIZED = "Serialized"
+    QUANTITY = "Quantity"
+
+
 class User(db.Model):
     """Mapped representation of the central FSI users table."""
 
@@ -284,6 +289,17 @@ class Inventory(db.Model):
     )
     make = db.Column(db.String(100), nullable=True)
     model_name = db.Column(db.String(100), nullable=True)
+    tracking_mode = db.Column(
+        db.Enum(
+            AssetTrackingMode,
+            name="asset_tracking_mode",
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            validate_strings=True,
+        ),
+        nullable=False,
+        default=AssetTrackingMode.SERIALIZED,
+    )
+    quantity = db.Column(db.Integer, nullable=False, default=1)
     # State
     status = db.Column(
         db.Enum(
