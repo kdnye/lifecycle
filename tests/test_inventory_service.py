@@ -61,3 +61,25 @@ def test_category_tree_structure(app):
     assert tree[0]["category"].name == "Computers"
     assert len(tree[0]["children"]) == 1
     assert tree[0]["children"][0]["category"].name == "Laptops"
+
+
+def test_create_quantity_tracked_asset(app):
+    asset = inventory_service.create_asset({
+        "make": "Logitech",
+        "model_name": "Wireless Mouse",
+        "tracking_mode": "Quantity",
+        "quantity": 25,
+        "status": "Available",
+    })
+    assert asset.tracking_mode.value == "Quantity"
+    assert asset.quantity == 25
+
+
+def test_serialized_asset_rejects_quantity_above_one(app):
+    with pytest.raises(ValueError):
+        inventory_service.create_asset({
+            "asset_tag": "SER-100",
+            "tracking_mode": "Serialized",
+            "quantity": 4,
+            "status": "Available",
+        })
