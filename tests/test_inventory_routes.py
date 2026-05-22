@@ -49,6 +49,28 @@ def test_create_asset(app, logged_in_client):
     assert asset.status == AssetStatus.AVAILABLE
 
 
+def test_create_quantity_asset(app, logged_in_client):
+    client, user = logged_in_client
+
+    response = client.post(
+        "/inventory/new",
+        data={
+            "make": "Anker",
+            "model_name": "USB-C Cable",
+            "tracking_mode": "Quantity",
+            "quantity": "50",
+            "status": "Available",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    asset = Inventory.query.filter_by(model_name="USB-C Cable").first()
+    assert asset is not None
+    assert asset.tracking_mode.value == "Quantity"
+    assert asset.quantity == 50
+
+
 def test_scan_lookup_not_found(app, logged_in_client):
     client, user = logged_in_client
 

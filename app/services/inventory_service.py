@@ -4,7 +4,19 @@ from typing import Optional
 
 from sqlalchemy import or_
 
-from app.models import AssetCategory, AssetStatus, Inventory, db
+from app.models import AssetCategory, AssetStatus, AssetTrackingMode, Inventory, db
+
+
+def _validate_tracking_data(data: dict) -> None:
+    tracking_mode = data.get("tracking_mode", AssetTrackingMode.SERIALIZED.value)
+    mode_enum = AssetTrackingMode(tracking_mode)
+    quantity = data.get("quantity")
+    normalized_quantity = int(quantity) if quantity not in (None, "") else 1
+
+    if normalized_quantity < 1:
+        raise ValueError("Quantity must be at least 1.")
+    if mode_enum == AssetTrackingMode.SERIALIZED and normalized_quantity != 1:
+        raise ValueError("Serialized assets must have quantity set to 1.")
 
 
 def get_asset_by_id(asset_id: int) -> Optional[Inventory]:
@@ -76,6 +88,7 @@ def list_assets(
 
 
 def create_asset(data: dict) -> Inventory:
+    _validate_tracking_data(data)
     asset = Inventory(
         serial_number=data.get("serial_number") or None,
         asset_tag=data.get("asset_tag") or None,
@@ -83,6 +96,10 @@ def create_asset(data: dict) -> Inventory:
         category_id=data.get("category_id") or None,
         make=data.get("make") or None,
         model_name=data.get("model_name") or None,
+        tracking_mode=AssetTrackingMode(
+            data.get("tracking_mode", AssetTrackingMode.SERIALIZED.value)
+        ),
+        quantity=int(data.get("quantity") if data.get("quantity") is not None else 1),
         status=AssetStatus(data.get("status", "Available")),
         assigned_to_user_id=data.get("assigned_to_user_id") or None,
         photo_url=data.get("photo_url") or None,
@@ -98,6 +115,15 @@ def create_asset(data: dict) -> Inventory:
 
 
 def update_asset(asset: Inventory, data: dict) -> Inventory:
+    merged = {
+        "tracking_mode": (
+            data.get("tracking_mode")
+            if "tracking_mode" in data
+            else asset.tracking_mode.value
+        ),
+        "quantity": data.get("quantity") if "quantity" in data else asset.quantity,
+    }
+    _validate_tracking_data(merged)
     field_map = [
         "serial_number", "asset_tag", "ble_tag_id",
         "category_id", "make", "model_name",
@@ -107,6 +133,10 @@ def update_asset(asset: Inventory, data: dict) -> Inventory:
     for field in field_map:
         if field in data:
             setattr(asset, field, data[field] or None)
+    if "tracking_mode" in data:
+        asset.tracking_mode = AssetTrackingMode(data["tracking_mode"])
+    if "quantity" in data:
+        asset.quantity = int(data["quantity"] if data["quantity"] is not None else 1)
     if "status" in data:
         asset.status = AssetStatus(data["status"])
     db.session.commit()

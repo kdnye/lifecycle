@@ -10,7 +10,7 @@ from flask import (
 )
 
 from app.auth_utils import login_required
-from app.models import AssetStatus
+from app.models import AssetStatus, AssetTrackingMode
 from app.services import inventory_service
 from app.services.asset_storage import delete_asset_photo, upload_asset_photo
 
@@ -54,6 +54,7 @@ def new_asset_form():
         asset=None,
         categories=categories,
         statuses=list(AssetStatus),
+        tracking_modes=list(AssetTrackingMode),
     )
 
 
@@ -91,6 +92,7 @@ def edit_asset_form(asset_id: int):
         asset=asset,
         categories=categories,
         statuses=list(AssetStatus),
+        tracking_modes=list(AssetTrackingMode),
     )
 
 
@@ -197,6 +199,8 @@ def _asset_data_from_form(form) -> dict:
         "category_id": form.get("category_id", type=int),
         "make": form.get("make", "").strip() or None,
         "model_name": form.get("model_name", "").strip() or None,
+        "tracking_mode": form.get("tracking_mode", "Serialized"),
+        "quantity": form.get("quantity", type=int),
         "status": form.get("status", "Available"),
         "assigned_to_user_id": form.get("assigned_to_user_id", type=int),
         "notes": form.get("notes", "").strip() or None,
