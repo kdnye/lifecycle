@@ -99,7 +99,7 @@ def create_asset(data: dict) -> Inventory:
         tracking_mode=AssetTrackingMode(
             data.get("tracking_mode", AssetTrackingMode.SERIALIZED.value)
         ),
-        quantity=int(data.get("quantity") or 1),
+        quantity=int(data.get("quantity") if data.get("quantity") is not None else 1),
         status=AssetStatus(data.get("status", "Available")),
         assigned_to_user_id=data.get("assigned_to_user_id") or None,
         photo_url=data.get("photo_url") or None,
@@ -136,7 +136,7 @@ def update_asset(asset: Inventory, data: dict) -> Inventory:
     if "tracking_mode" in data:
         asset.tracking_mode = AssetTrackingMode(data["tracking_mode"])
     if "quantity" in data:
-        asset.quantity = int(data["quantity"] or 1)
+        asset.quantity = int(data["quantity"] if data["quantity"] is not None else 1)
     if "status" in data:
         asset.status = AssetStatus(data["status"])
     db.session.commit()

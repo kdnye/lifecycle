@@ -200,7 +200,7 @@ def _asset_data_from_form(form) -> dict:
         "make": form.get("make", "").strip() or None,
         "model_name": form.get("model_name", "").strip() or None,
         "tracking_mode": form.get("tracking_mode", "Serialized"),
-        "quantity": form.get("quantity", type=int) or 1,
+        "quantity": form.get("quantity", type=int),
         "status": form.get("status", "Available"),
         "assigned_to_user_id": form.get("assigned_to_user_id", type=int),
         "notes": form.get("notes", "").strip() or None,
