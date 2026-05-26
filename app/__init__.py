@@ -213,14 +213,28 @@ def create_app() -> Flask:
     @app.errorhandler(SQLAlchemyError)
     def database_error(e):
         app.logger.exception("Database error while serving request.", extra={"path": request.path})
+        guidance = (
+            "Database schema is missing required objects or currently unavailable. "
+            "Run `flask db upgrade` (or `alembic upgrade head`) and verify `/readyz`."
+        )
+        if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+            return (
+                jsonify(
+                    {
+                        "status": "unready",
+                        "guidance": guidance,
+                        "error_type": type(e).__name__,
+                    }
+                ),
+                503,
+            )
+
         return (
-            jsonify(
-                {
-                    "status": "unready",
-                    "guidance": "Database schema is missing required objects or currently unavailable. "
-                    "Run `flask db upgrade` (or `alembic upgrade head`) and verify `/readyz`.",
-                    "error_type": type(e).__name__,
-                }
+            render_template(
+                "error.html",
+                error_code=503,
+                error_title="Service Unavailable",
+                error_message=guidance,
             ),
             503,
         )
