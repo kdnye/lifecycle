@@ -56,7 +56,7 @@
       <div class="col-12 col-md-3">
         <label for="it_asset_tag" class="form-label">IT Asset Tag</label>
         <input type="text" id="it_asset_tag" name="it_asset_tag" class="form-control"
-               value="{{ asset.it_asset_tag or '' if asset else '' }}" />
+               value="{{ asset.it_asset_tag or prefill_asset_tag or '' if asset else prefill_asset_tag or '' }}" />
       </div>
       <div class="col-12 col-md-3">
         <label for="serial_number" class="form-label">Serial Number</label>
