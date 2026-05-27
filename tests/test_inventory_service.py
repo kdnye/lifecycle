@@ -6,6 +6,7 @@ from app.services import inventory_service
 def test_create_and_retrieve_asset(app):
     asset = inventory_service.create_asset({
         "asset_tag": "SVC-001",
+        "it_asset_number": "IT-SVC-001",
         "make": "Apple",
         "model_name": "MacBook Pro",
         "status": "Available",
@@ -15,6 +16,7 @@ def test_create_and_retrieve_asset(app):
     retrieved = inventory_service.get_asset_by_id(asset.id)
     assert retrieved is not None
     assert retrieved.asset_tag == "SVC-001"
+    assert retrieved.it_asset_number == "IT-SVC-001"
     assert retrieved.make == "Apple"
     assert retrieved.status == AssetStatus.AVAILABLE
 
@@ -22,13 +24,15 @@ def test_create_and_retrieve_asset(app):
 def test_get_asset_by_tag_searches_all_tag_fields(app):
     a1 = Inventory(serial_number="SER-AAA", status=AssetStatus.AVAILABLE)
     a2 = Inventory(asset_tag="TAG-BBB", status=AssetStatus.AVAILABLE)
+    a4 = Inventory(it_asset_number="IT-444", status=AssetStatus.AVAILABLE)
     a3 = Inventory(ble_tag_id="BLE-CCC", status=AssetStatus.AVAILABLE)
-    db.session.add_all([a1, a2, a3])
+    db.session.add_all([a1, a2, a3, a4])
     db.session.commit()
 
     assert inventory_service.get_asset_by_tag("SER-AAA") is not None
     assert inventory_service.get_asset_by_tag("TAG-BBB") is not None
     assert inventory_service.get_asset_by_tag("BLE-CCC") is not None
+    assert inventory_service.get_asset_by_tag("IT-444") is not None
     assert inventory_service.get_asset_by_tag("NOTFOUND") is None
 
 

@@ -24,9 +24,10 @@ def get_asset_by_id(asset_id: int) -> Optional[Inventory]:
 
 
 def get_asset_by_tag(tag_value: str) -> Optional[Inventory]:
-    """Search asset_tag, serial_number, and ble_tag_id fields."""
+    """Search it_asset_number, asset_tag, serial_number, and ble_tag_id fields."""
     return Inventory.query.filter(
         or_(
+            Inventory.it_asset_number == tag_value,
             Inventory.asset_tag == tag_value,
             Inventory.serial_number == tag_value,
             Inventory.ble_tag_id == tag_value,
@@ -74,10 +75,12 @@ def list_assets(
         term = f"%{search}%"
         query = query.filter(
             or_(
+                Inventory.it_asset_number.ilike(term),
                 Inventory.asset_tag.ilike(term),
                 Inventory.serial_number.ilike(term),
                 Inventory.make.ilike(term),
                 Inventory.model_name.ilike(term),
+                Inventory.location.ilike(term),
                 Inventory.notes.ilike(term),
             )
         )
@@ -92,6 +95,7 @@ def create_asset(data: dict) -> Inventory:
     asset = Inventory(
         serial_number=data.get("serial_number") or None,
         asset_tag=data.get("asset_tag") or None,
+        it_asset_number=data.get("it_asset_number") or None,
         ble_tag_id=data.get("ble_tag_id") or None,
         category_id=data.get("category_id") or None,
         make=data.get("make") or None,
@@ -103,6 +107,7 @@ def create_asset(data: dict) -> Inventory:
         status=AssetStatus(data.get("status", "Available")),
         assigned_to_user_id=data.get("assigned_to_user_id") or None,
         photo_url=data.get("photo_url") or None,
+        location=data.get("location") or None,
         notes=data.get("notes") or None,
         purchase_date=data.get("purchase_date") or None,
         purchase_price=data.get("purchase_price") or None,
@@ -125,9 +130,9 @@ def update_asset(asset: Inventory, data: dict) -> Inventory:
     }
     _validate_tracking_data(merged)
     field_map = [
-        "serial_number", "asset_tag", "ble_tag_id",
+        "serial_number", "asset_tag", "it_asset_number", "ble_tag_id",
         "category_id", "make", "model_name",
-        "assigned_to_user_id", "photo_url", "notes",
+        "assigned_to_user_id", "photo_url", "location", "notes",
         "purchase_date", "purchase_price", "warranty_expiry",
     ]
     for field in field_map:
