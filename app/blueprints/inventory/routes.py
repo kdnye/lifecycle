@@ -50,9 +50,11 @@ def list_assets():
 def new_asset_form():
     categories = inventory_service.list_categories_hierarchical()
     assignable_users = inventory_service.list_assignable_users()
+    prefill_asset_tag = request.args.get("asset_tag", "").strip()
     return render_template(
         "inventory/form.html",
         asset=None,
+        prefill_asset_tag=prefill_asset_tag,
         categories=categories,
         statuses=list(AssetStatus),
         tracking_modes=list(AssetTrackingMode),
