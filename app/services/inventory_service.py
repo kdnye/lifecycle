@@ -24,12 +24,11 @@ def get_asset_by_id(asset_id: int) -> Optional[Inventory]:
 
 
 def get_asset_by_tag(tag_value: str) -> Optional[Inventory]:
-    """Search asset_number, it_asset_tag, asset_tag, serial_number, and ble_tag_id fields."""
+    """Search asset_number, it_asset_tag, serial_number, and ble_tag_id fields."""
     return Inventory.query.filter(
         or_(
             Inventory.asset_number == tag_value,
             Inventory.it_asset_tag == tag_value,
-            Inventory.asset_tag == tag_value,
             Inventory.serial_number == tag_value,
             Inventory.ble_tag_id == tag_value,
         )
@@ -78,7 +77,6 @@ def list_assets(
             or_(
                 Inventory.asset_number.ilike(term),
                 Inventory.it_asset_tag.ilike(term),
-                Inventory.asset_tag.ilike(term),
                 Inventory.serial_number.ilike(term),
                 Inventory.make.ilike(term),
                 Inventory.model_name.ilike(term),
@@ -96,7 +94,6 @@ def create_asset(data: dict) -> Inventory:
     _validate_tracking_data(data)
     asset = Inventory(
         serial_number=data.get("serial_number") or None,
-        asset_tag=data.get("asset_tag") or None,
         asset_number=data.get("asset_number") or None,
         it_asset_tag=data.get("it_asset_tag") or None,
         ble_tag_id=data.get("ble_tag_id") or None,
@@ -133,7 +130,7 @@ def update_asset(asset: Inventory, data: dict) -> Inventory:
     }
     _validate_tracking_data(merged)
     field_map = [
-        "serial_number", "asset_tag", "asset_number", "it_asset_tag", "ble_tag_id",
+        "serial_number", "asset_number", "it_asset_tag", "ble_tag_id",
         "category_id", "make", "model_name",
         "assigned_to_user_id", "photo_url", "location", "notes",
         "purchase_date", "purchase_price", "warranty_expiry",
