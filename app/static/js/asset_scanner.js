@@ -41,7 +41,7 @@
             '<i class="bi bi-exclamation-triangle text-warning"></i> ' +
             'Warning not in system: would you like to create a new asset?';
           if (window.confirm('Warning not in system: would you like to create a new asset?')) {
-            window.location.assign(NEW_ASSET_PATH + '?asset_tag=' + encodeURIComponent(tag));
+            window.location.assign(NEW_ASSET_PATH + '?asset_number=' + encodeURIComponent(tag));
           }
         }
       })
