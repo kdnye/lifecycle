@@ -3,6 +3,7 @@
   'use strict';
 
   var SCAN_ENDPOINT = '/inventory/scan';
+  var NEW_ASSET_PATH = '/inventory/new';
 
   function getCsrfToken() {
     var meta = document.querySelector('meta[name="csrf-token"]');
@@ -33,12 +34,15 @@
           preview.innerHTML =
             '<i class="bi bi-check-circle text-success"></i> ' +
             'Asset found: <strong>' + (data.it_asset_tag || data.serial_number || '#' + data.id) + '</strong> ' +
-            '(' + data.status + ') &mdash; ' +
-            '<a href="' + data.detail_url + '">View asset</a>';
+            '(' + data.status + ') &mdash; opening asset page…';
+          window.location.assign(data.detail_url);
         } else {
           preview.innerHTML =
-            '<i class="bi bi-info-circle text-secondary"></i> ' +
-            'No existing asset for <code>' + tag + '</code>. Fill in the form to create one.';
+            '<i class="bi bi-exclamation-triangle text-warning"></i> ' +
+            'Warning not in system: would you like to create a new asset?';
+          if (window.confirm('Warning not in system: would you like to create a new asset?')) {
+            window.location.assign(NEW_ASSET_PATH + '?asset_number=' + encodeURIComponent(tag));
+          }
         }
       })
       .catch(function () {
