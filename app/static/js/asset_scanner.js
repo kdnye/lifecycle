@@ -32,7 +32,7 @@
         if (data.found) {
           preview.innerHTML =
             '<i class="bi bi-check-circle text-success"></i> ' +
-            'Asset found: <strong>' + (data.asset_number || data.serial_number || '#' + data.id) + '</strong> ' +
+            'Asset found: <strong>' + (data.asset_number || data.it_asset_tag || data.serial_number || '#' + data.id) + '</strong> ' +
             '(' + data.status + ') &mdash; ' +
             '<a href="' + data.detail_url + '">View asset</a>';
         } else {

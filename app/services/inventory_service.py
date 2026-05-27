@@ -25,6 +25,8 @@ def get_asset_by_id(asset_id: int) -> Optional[Inventory]:
 
 def get_asset_by_tag(tag_value: str) -> Optional[Inventory]:
     """Search asset_number, it_asset_tag, serial_number, and ble_tag_id fields."""
+    if not tag_value:
+        return None
     return Inventory.query.filter(
         or_(
             Inventory.asset_number == tag_value,
