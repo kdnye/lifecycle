@@ -32,7 +32,7 @@
         if (data.found) {
           preview.innerHTML =
             '<i class="bi bi-check-circle text-success"></i> ' +
-            'Asset found: <strong>' + (data.asset_tag || data.serial_number || '#' + data.id) + '</strong> ' +
+            'Asset found: <strong>' + (data.asset_number || data.serial_number || '#' + data.id) + '</strong> ' +
             '(' + data.status + ') &mdash; ' +
             '<a href="' + data.detail_url + '">View asset</a>';
         } else {
@@ -49,7 +49,7 @@
   }
 
   function fillTargetField(widget, value) {
-    var fieldId = widget.dataset.fieldId || 'asset_tag';
+    var fieldId = widget.dataset.fieldId || 'asset_number';
     var input = document.getElementById(fieldId);
     if (input) {
       input.value = value;
