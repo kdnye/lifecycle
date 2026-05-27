@@ -77,7 +77,7 @@ def readyz():
         USERS_TABLE: ["id", "email", "password_hash", "can_manage_lifecycle"],
         COMMUNICATION_OPTIONS_TABLE: ["id", "it_support_email", "it_sales_email", "telecon_sales_email"],
         ASSET_CATEGORIES_TABLE: ["id", "name", "is_active"],
-        INVENTORY_TABLE: ["id", "status", "created_at", "updated_at", "location", "it_asset_number"],
+        INVENTORY_TABLE: ["id", "status", "created_at", "updated_at", "location", "it_asset_tag", "asset_number"],
         INTAKE_ANSWERS_TABLE: ["id", "intake_request_id", "question_matrix_id"],
         DISTRIBUTION_LISTS_TABLE: ["id", "name", "email", "is_active"],
         FILE_SHARE_PERMISSIONS_TABLE: ["id", "name", "resource_path", "is_active"],
