@@ -43,7 +43,12 @@
     <h5 class="mb-3">Identification</h5>
     <div class="row g-3">
       <div class="col-md-4">
-        <label for="asset_tag" class="form-label">Asset Tag</label>
+        <label for="it_asset_number" class="form-label">IT Asset Number</label>
+        <input type="text" id="it_asset_number" name="it_asset_number" class="form-control"
+               value="{{ asset.it_asset_number or '' if asset else '' }}" />
+      </div>
+      <div class="col-md-4">
+        <label for="asset_tag" class="form-label">Legacy Asset Tag</label>
         <input type="text" id="asset_tag" name="asset_tag" class="form-control"
                value="{{ asset.asset_tag or '' if asset else '' }}" />
       </div>
@@ -156,6 +161,16 @@
                value="{{ asset.warranty_expiry.isoformat() if asset and asset.warranty_expiry else '' }}" />
       </div>
     </div>
+  </div>
+
+  <!-- Location -->
+  <div class="fsi-card mb-3">
+    <h5 class="mb-3">Location</h5>
+    <label for="location" class="form-label">Location</label>
+    <input type="text" id="location" name="location" class="form-control"
+           placeholder="e.g., Hermosillo"
+           value="{{ asset.location or '' if asset else '' }}" />
+    <div class="form-text">Store physical asset location separately from notes.</div>
   </div>
 
   <!-- Notes -->

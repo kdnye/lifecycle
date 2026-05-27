@@ -183,6 +183,7 @@ def scan_lookup():
         "found": True,
         "id": asset.id,
         "asset_tag": asset.asset_tag,
+        "it_asset_number": asset.it_asset_number,
         "serial_number": asset.serial_number,
         "make": asset.make,
         "model_name": asset.model_name,
@@ -195,6 +196,7 @@ def _asset_data_from_form(form) -> dict:
     return {
         "serial_number": form.get("serial_number", "").strip() or None,
         "asset_tag": form.get("asset_tag", "").strip() or None,
+        "it_asset_number": form.get("it_asset_number", "").strip() or None,
         "ble_tag_id": form.get("ble_tag_id", "").strip() or None,
         "category_id": form.get("category_id", type=int),
         "make": form.get("make", "").strip() or None,
@@ -203,6 +205,7 @@ def _asset_data_from_form(form) -> dict:
         "quantity": form.get("quantity", type=int),
         "status": form.get("status", "Available"),
         "assigned_to_user_id": form.get("assigned_to_user_id", type=int),
+        "location": form.get("location", "").strip() or None,
         "notes": form.get("notes", "").strip() or None,
         "purchase_date": form.get("purchase_date") or None,
         "purchase_price": form.get("purchase_price") or None,
