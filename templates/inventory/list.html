@@ -33,7 +33,7 @@
   <div class="input-group">
     <input type="text" name="q" id="inventory-search-input" value="{{ search or '' }}" class="form-control"
            placeholder="Search by tag, serial, make, model…" />
-    <button type="button" class="btn fsi-button-secondary" id="inventory-search-scan-btn" title="Scan to search">
+    <button type="button" class="btn fsi-button-secondary" id="inventory-search-scan-btn" title="Scan to search" aria-label="Scan to search">
       <i class="bi bi-qr-code-scan"></i>
     </button>
     <button type="submit" class="btn fsi-button-primary"><i class="bi bi-search"></i></button>
@@ -175,7 +175,7 @@
 
 {% block scripts %}
   {{ super() }}
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     (function () {
       var scanBtn = document.getElementById('inventory-search-scan-btn');
@@ -186,14 +186,29 @@
 
       var scanner = null;
       var scanning = false;
+      var transitioning = false;
       var readerId = 'inventory-search-qr-reader';
 
+      function resetScannerUi() {
+        readerContainer.style.display = 'none';
+        scanBtn.classList.remove('active');
+      }
+
+      function stopScanner() {
+        if (!scanner) return Promise.resolve();
+        return scanner.stop().catch(function () {});
+      }
+
       scanBtn.addEventListener('click', function () {
+        if (transitioning) return;
+
         if (scanning && scanner) {
-          scanner.stop().catch(function () {});
-          scanning = false;
-          readerContainer.style.display = 'none';
-          scanBtn.classList.remove('active');
+          transitioning = true;
+          stopScanner().finally(function () {
+            scanning = false;
+            transitioning = false;
+            resetScannerUi();
+          });
           return;
         }
 
@@ -204,25 +219,33 @@
 
         readerContainer.style.display = 'block';
         scanner = new Html5Qrcode(readerId);
-        scanning = true;
+        transitioning = true;
         scanBtn.classList.add('active');
 
         scanner.start(
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           function (decodedText) {
+            if (transitioning) return;
+
+            transitioning = true;
             searchInput.value = decodedText || '';
-            scanner.stop().catch(function () {});
-            scanning = false;
-            readerContainer.style.display = 'none';
-            scanBtn.classList.remove('active');
-            searchForm.submit();
+
+            stopScanner().finally(function () {
+              scanning = false;
+              transitioning = false;
+              resetScannerUi();
+              searchForm.submit();
+            });
           },
           function () {}
-        ).catch(function () {
+        ).then(function () {
+          scanning = true;
+          transitioning = false;
+        }).catch(function () {
           scanning = false;
-          readerContainer.style.display = 'none';
-          scanBtn.classList.remove('active');
+          transitioning = false;
+          resetScannerUi();
           alert('Unable to access camera. Check browser permissions and try again.');
         });
       });
