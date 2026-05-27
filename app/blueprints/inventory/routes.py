@@ -49,12 +49,14 @@ def list_assets():
 @login_required
 def new_asset_form():
     categories = inventory_service.list_categories_hierarchical()
+    assignable_users = inventory_service.list_assignable_users()
     return render_template(
         "inventory/form.html",
         asset=None,
         categories=categories,
         statuses=list(AssetStatus),
         tracking_modes=list(AssetTrackingMode),
+        assignable_users=assignable_users,
     )
 
 
@@ -87,12 +89,14 @@ def edit_asset_form(asset_id: int):
     if asset is None:
         abort(404)
     categories = inventory_service.list_categories_hierarchical()
+    assignable_users = inventory_service.list_assignable_users()
     return render_template(
         "inventory/form.html",
         asset=asset,
         categories=categories,
         statuses=list(AssetStatus),
         tracking_modes=list(AssetTrackingMode),
+        assignable_users=assignable_users,
     )
 
 

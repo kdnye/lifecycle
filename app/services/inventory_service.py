@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy import or_
 
-from app.models import AssetCategory, AssetStatus, AssetTrackingMode, Inventory, db
+from app.models import AssetCategory, AssetStatus, AssetTrackingMode, Inventory, User, db
 
 
 def _validate_tracking_data(data: dict) -> None:
@@ -91,6 +91,16 @@ def list_assets(
         page=page, per_page=per_page, error_out=False
     )
 
+
+
+def list_assignable_users() -> list[User]:
+    """Return active users for assignment dropdown."""
+    return (
+        User.query
+        .filter(User.is_active.is_(True))
+        .order_by(User.name.asc(), User.first_name.asc(), User.last_name.asc(), User.id.asc())
+        .all()
+    )
 
 def create_asset(data: dict) -> Inventory:
     _validate_tracking_data(data)
