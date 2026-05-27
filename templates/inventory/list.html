@@ -26,18 +26,22 @@
 </div>
 
 <!-- Search -->
-<form method="get" class="mb-4">
+<form method="get" class="mb-4" id="inventory-search-form">
   {% if selected_category_id %}
     <input type="hidden" name="category_id" value="{{ selected_category_id }}" />
   {% endif %}
   <div class="input-group">
-    <input type="text" name="q" value="{{ search or '' }}" class="form-control"
+    <input type="text" name="q" id="inventory-search-input" value="{{ search or '' }}" class="form-control"
            placeholder="Search by tag, serial, make, model…" />
+    <button type="button" class="btn fsi-button-secondary" id="inventory-search-scan-btn" title="Scan to search">
+      <i class="bi bi-qr-code-scan"></i>
+    </button>
     <button type="submit" class="btn fsi-button-primary"><i class="bi bi-search"></i></button>
     {% if search %}
       <a href="{{ url_for('inventory.list_assets') }}" class="btn fsi-button-secondary">Clear</a>
     {% endif %}
   </div>
+  <div id="inventory-search-qr-reader" class="mt-2" style="display:none;"></div>
 </form>
 
 <div class="row g-4">
@@ -167,4 +171,61 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    (function () {
+      var scanBtn = document.getElementById('inventory-search-scan-btn');
+      var searchInput = document.getElementById('inventory-search-input');
+      var searchForm = document.getElementById('inventory-search-form');
+      var readerContainer = document.getElementById('inventory-search-qr-reader');
+      if (!scanBtn || !searchInput || !searchForm || !readerContainer) return;
+
+      var scanner = null;
+      var scanning = false;
+      var readerId = 'inventory-search-qr-reader';
+
+      scanBtn.addEventListener('click', function () {
+        if (scanning && scanner) {
+          scanner.stop().catch(function () {});
+          scanning = false;
+          readerContainer.style.display = 'none';
+          scanBtn.classList.remove('active');
+          return;
+        }
+
+        if (!window.Html5Qrcode) {
+          alert('Scanner library failed to load. Please refresh and try again.');
+          return;
+        }
+
+        readerContainer.style.display = 'block';
+        scanner = new Html5Qrcode(readerId);
+        scanning = true;
+        scanBtn.classList.add('active');
+
+        scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          function (decodedText) {
+            searchInput.value = decodedText || '';
+            scanner.stop().catch(function () {});
+            scanning = false;
+            readerContainer.style.display = 'none';
+            scanBtn.classList.remove('active');
+            searchForm.submit();
+          },
+          function () {}
+        ).catch(function () {
+          scanning = false;
+          readerContainer.style.display = 'none';
+          scanBtn.classList.remove('active');
+          alert('Unable to access camera. Check browser permissions and try again.');
+        });
+      });
+    })();
+  </script>
 {% endblock %}
