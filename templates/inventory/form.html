@@ -58,11 +58,6 @@
                value="{{ asset.serial_number or '' if asset else '' }}" />
       </div>
       <div class="col-md-4">
-        <label for="asset_tag" class="form-label">Legacy Asset Tag</label>
-        <input type="text" id="asset_tag" name="asset_tag" class="form-control"
-               value="{{ asset.asset_tag or '' if asset else '' }}" />
-      </div>
-      <div class="col-md-4">
         <label for="ble_tag_id" class="form-label">BLE Tag ID</label>
         <input type="text" id="ble_tag_id" name="ble_tag_id" class="form-control"
                value="{{ asset.ble_tag_id or '' if asset else '' }}" />
