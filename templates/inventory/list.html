@@ -110,6 +110,7 @@
                     {{ item.make or '' }} {{ item.model_name or '' }}
                   {% else %}&mdash;{% endif %}
                 </td>
+                <td class="small">{{ item.make or '&mdash;' }} {{ item.model_name or '&mdash;' }}</td>
                 <td>
                   <span class="fsi-badge fsi-status-badge-{{ item.status.value.lower() }}">
                     {{ item.status.value.replace('_', ' ') }}

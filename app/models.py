@@ -281,6 +281,8 @@ class Inventory(db.Model):
     asset_tag = db.Column(db.String(100), nullable=True, unique=True, index=True)
     asset_number = db.Column(db.String(100), nullable=True, unique=True, index=True)
     it_asset_tag = db.Column(db.String(255), nullable=True, unique=True, index=True)
+    asset_number = db.Column(db.String(100), nullable=True)
+    it_asset_tag = db.Column(db.String(255), nullable=True)
     location = db.Column(db.String(255), nullable=True)
     ble_tag_id = db.Column(db.String(100), nullable=True, unique=True, index=True)
     # Classification
