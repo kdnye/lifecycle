@@ -121,7 +121,7 @@
                     {{ item.status.value.replace('_', ' ') }}
                   </span>
                 </td>
-                <td class="small">{{ item.assigned_to.name if item.assigned_to else '&mdash;' }}</td>
+                <td class="small">{{ item.assigned_to.name if item.assigned_to else '—' }}</td>
                 <td>
                   <a href="{{ url_for('inventory.asset_detail', asset_id=item.id) }}"
                      class="btn btn-sm fsi-button-secondary">View</a>
