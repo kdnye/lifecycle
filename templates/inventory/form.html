@@ -2,8 +2,7 @@
 {% block title %}{% if asset %}Edit Asset #{{ asset.id }}{% else %}New Asset{% endif %} — Inventory{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label="breadcrumb" class="mb-3 d-none d-md-block">
   <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="{{ url_for('inventory.list_assets') }}">Inventory</a></li>
     {% if asset %}
@@ -17,59 +16,64 @@
   </ol>
 </nav>
 
+<div class="d-md-none mb-3">
+  <a href="{% if asset %}{{ url_for('inventory.asset_detail', asset_id=asset.id) }}{% else %}{{ url_for('inventory.list_assets') }}{% endif %}" class="text-decoration-none text-muted small fw-bold">
+    <i class="bi bi-arrow-left"></i> {% if asset %}Back to Asset #{{ asset.id }}{% else %}Back to Inventory{% endif %}
+  </a>
+</div>
+
 <h1 class="fsi-display mb-4">{% if asset %}Edit Asset #{{ asset.id }}{% else %}New Asset{% endif %}</h1>
 
 <form method="post"
       action="{{ url_for('inventory.update_asset', asset_id=asset.id) if asset else url_for('inventory.create_asset') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
-  <!-- Scanner widget -->
-  <div class="fsi-scanner-widget" id="scanner-widget" data-field-id="it_asset_tag">
-    <p class="small fw-semibold mb-2"><i class="bi bi-upc-scan"></i> Scan Asset Number</p>
-    <button type="button" class="btn btn-sm fsi-button-secondary me-2" data-action="camera-scan">
-      <i class="bi bi-qr-code-scan"></i> Scan Barcode / QR
-    </button>
-    <button type="button" class="btn btn-sm fsi-button-secondary" data-action="ble-scan">
-      <i class="bi bi-bluetooth"></i> Scan BLE Tag
-    </button>
-    <div id="qr-reader-scanner-widget" class="mt-2"></div>
-    <div class="fsi-scanner-preview" style="display:none;" id="scanner-preview-scanner-widget"></div>
-    <div data-scanner-status style="display:none;" class="small mt-1 text-muted"
+  <div class="fsi-card mb-4 fsi-scanner-widget" id="scanner-widget" data-field-id="it_asset_tag">
+    <p class="small fw-semibold mb-3"><i class="bi bi-upc-scan"></i> Scan Asset Tag</p>
+    <div class="d-grid gap-2 d-md-flex">
+      <button type="button" class="btn fsi-button-secondary" data-action="camera-scan">
+        <i class="bi bi-qr-code-scan"></i> Scan Barcode / QR
+      </button>
+      <button type="button" class="btn fsi-button-secondary" data-action="ble-scan">
+        <i class="bi bi-bluetooth"></i> Scan BLE Tag
+      </button>
+    </div>
+    <div id="qr-reader-scanner-widget" class="mt-3"></div>
+    <div class="fsi-scanner-preview mt-2" style="display:none;" id="scanner-preview-scanner-widget"></div>
+    <div data-scanner-status style="display:none;" class="small mt-2 text-muted"
          id="scanner-status-scanner-widget"></div>
   </div>
 
-  <!-- Identification -->
   <div class="fsi-card mb-3">
-    <h5 class="mb-3">Identification</h5>
+    <h5 class="mb-3 border-bottom pb-2">Identification</h5>
     <div class="row g-3">
-      <div class="col-md-4">
+      <div class="col-12 col-md-3">
         <label for="asset_number" class="form-label">Asset #</label>
         <input type="text" id="asset_number" name="asset_number" class="form-control"
                value="{{ asset.asset_number or '' if asset else '' }}" />
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-3">
         <label for="it_asset_tag" class="form-label">IT Asset Tag</label>
         <input type="text" id="it_asset_tag" name="it_asset_tag" class="form-control"
                value="{{ asset.it_asset_tag or '' if asset else '' }}" />
-            </div>
-      <div class="col-md-4">
-        <label for="ble_tag_id" class="form-label">BLE Tag ID</label>
-        <input type="text" id="ble_tag_id" name="ble_tag_id" class="form-control"
-               value="{{ asset.ble_tag_id or '' if asset else '' }}" />
-            </div>
-      <div class="col-md-4">
+      </div>
+      <div class="col-12 col-md-3">
         <label for="serial_number" class="form-label">Serial Number</label>
         <input type="text" id="serial_number" name="serial_number" class="form-control"
                value="{{ asset.serial_number or '' if asset else '' }}" />
-            </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <label for="ble_tag_id" class="form-label">BLE Tag ID</label>
+        <input type="text" id="ble_tag_id" name="ble_tag_id" class="form-control"
+               value="{{ asset.ble_tag_id or '' if asset else '' }}" />
+      </div>
     </div>
   </div>
 
-  <!-- Classification -->
   <div class="fsi-card mb-3">
-    <h5 class="mb-3">Classification</h5>
+    <h5 class="mb-3 border-bottom pb-2">Classification</h5>
     <div class="row g-3">
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <label for="category_id" class="form-label">Category</label>
         <select id="category_id" name="category_id" class="form-select">
           <option value="">None</option>
@@ -82,17 +86,17 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <label for="make" class="form-label">Make</label>
         <input type="text" id="make" name="make" class="form-control"
                value="{{ asset.make or '' if asset else '' }}" />
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <label for="model_name" class="form-label">Model</label>
         <input type="text" id="model_name" name="model_name" class="form-control"
                value="{{ asset.model_name or '' if asset else '' }}" />
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-6">
         <label for="tracking_mode" class="form-label">Tracking Mode</label>
         <select id="tracking_mode" name="tracking_mode" class="form-select">
           {% for mode in tracking_modes %}
@@ -104,7 +108,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-6">
         <label for="quantity" class="form-label">Quantity</label>
         <input type="number" id="quantity" name="quantity" class="form-control"
                min="1" step="1"
@@ -114,11 +118,10 @@
     </div>
   </div>
 
-  <!-- Status & Assignment -->
   <div class="fsi-card mb-3">
-    <h5 class="mb-3">Status &amp; Assignment</h5>
+    <h5 class="mb-3 border-bottom pb-2">Status &amp; Assignment</h5>
     <div class="row g-3">
-      <div class="col-md-6">
+      <div class="col-12 col-md-6">
         <label for="status" class="form-label">Status</label>
         <select id="status" name="status" class="form-select">
           {% for s in statuses %}
@@ -130,7 +133,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-6">
+      <div class="col-12 col-md-6">
         <label for="assigned_to_user_id" class="form-label">Assigned To (User ID)</label>
         <input type="number" id="assigned_to_user_id" name="assigned_to_user_id"
                class="form-control" min="1"
@@ -140,22 +143,21 @@
     </div>
   </div>
 
-  <!-- Financials -->
   <div class="fsi-card mb-3">
-    <h5 class="mb-3">Financials</h5>
+    <h5 class="mb-3 border-bottom pb-2">Financials</h5>
     <div class="row g-3">
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <label for="purchase_date" class="form-label">Purchase Date</label>
         <input type="date" id="purchase_date" name="purchase_date" class="form-control"
                value="{{ asset.purchase_date.isoformat() if asset and asset.purchase_date else '' }}" />
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <label for="purchase_price" class="form-label">Purchase Price ($)</label>
         <input type="number" id="purchase_price" name="purchase_price" class="form-control"
                step="0.01" min="0"
                value="{{ asset.purchase_price if asset and asset.purchase_price else '' }}" />
       </div>
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <label for="warranty_expiry" class="form-label">Warranty Expiry</label>
         <input type="date" id="warranty_expiry" name="warranty_expiry" class="form-control"
                value="{{ asset.warranty_expiry.isoformat() if asset and asset.warranty_expiry else '' }}" />
@@ -163,29 +165,26 @@
     </div>
   </div>
 
-  <!-- Location -->
   <div class="fsi-card mb-3">
-    <h5 class="mb-3">Location</h5>
+    <h5 class="mb-3 border-bottom pb-2">Location</h5>
     <label for="location" class="form-label">Location</label>
     <input type="text" id="location" name="location" class="form-control"
            placeholder="e.g., Hermosillo"
            value="{{ asset.location or '' if asset else '' }}" />
-    <div class="form-text">Store physical asset location separately from notes.</div>
   </div>
 
-  <!-- Notes -->
   <div class="fsi-card mb-4">
-    <h5 class="mb-3">Notes</h5>
+    <h5 class="mb-3 border-bottom pb-2">Notes</h5>
     <textarea id="notes" name="notes" class="form-control" rows="3"
               placeholder="Any additional notes…">{{ asset.notes or '' if asset else '' }}</textarea>
   </div>
 
-  <div class="d-flex gap-2">
-    <button type="submit" class="btn fsi-button-primary">
+  <div class="d-grid gap-2 d-md-flex mb-5">
+    <button type="submit" class="btn fsi-button-primary btn-lg">
       {% if asset %}Save Changes{% else %}Create Asset{% endif %}
     </button>
     <a href="{% if asset %}{{ url_for('inventory.asset_detail', asset_id=asset.id) }}{% else %}{{ url_for('inventory.list_assets') }}{% endif %}"
-       class="btn fsi-button-secondary">Cancel</a>
+       class="btn fsi-button-secondary btn-lg">Cancel</a>
   </div>
 </form>
 {% endblock %}
