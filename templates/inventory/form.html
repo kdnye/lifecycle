@@ -135,23 +135,16 @@
         </select>
       </div>
       <div class="col-12 col-md-6">
-        <label for="assigned_to_user_id" class="form-label">Assigned To (User ID)</label>
-        <input type="text"
-               id="assigned_to_user_id"
-               name="assigned_to_user_id"
-               class="form-control"
-               inputmode="numeric"
-               pattern="[0-9]*"
-               list="assignable-users"
-               autocomplete="off"
-               placeholder="Search by name or select a user ID"
-               value="{{ asset.assigned_to_user_id or '' if asset else '' }}" />
-        <datalist id="assignable-users">
+        <label for="assigned_to_user_id" class="form-label">Assigned To</label>
+        <select id="assigned_to_user_id" name="assigned_to_user_id" class="form-select">
+          <option value="">Unassigned</option>
           {% for user in assignable_users %}
-            <option value="{{ user.id }}" label="{{ user.name or ((user.first_name or '') ~ ' ' ~ (user.last_name or ''))|trim }} (ID: {{ user.id }})"></option>
+            <option value="{{ user.id }}" {% if asset and asset.assigned_to_user_id == user.id %}selected{% endif %}>
+              {{ user.name or ((user.first_name or '') ~ ' ' ~ (user.last_name or ''))|trim }} (ID: {{ user.id }})
+            </option>
           {% endfor %}
-        </datalist>
-        <div class="form-text">Type to search by name, then select a user ID. Leave blank if unassigned.</div>
+        </select>
+        <div class="form-text">Select a user to assign this asset. Leave as "Unassigned" if not assigned.</div>
       </div>
     </div>
   </div>
