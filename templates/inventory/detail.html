@@ -48,7 +48,7 @@
       <div class="d-flex align-items-start justify-content-between mb-3">
         <div>
           <h1 class="h4 mb-1">
-            {{ asset.it_asset_number or asset.asset_tag or asset.serial_number or ('Asset #' ~ asset.id) }}
+            {{ asset.asset_number or asset.it_asset_tag or asset.asset_tag or asset.serial_number or ('Asset #' ~ asset.id) }}
           </h1>
           <span class="fsi-badge fsi-status-badge-{{ asset.status.value.lower() }}">
             {{ asset.status.value.replace('_', ' ') }}
@@ -70,8 +70,11 @@
       </div>
 
       <dl class="row g-2 mb-0">
-        <dt class="col-sm-4 text-muted small">IT Asset Number</dt>
-        <dd class="col-sm-8">{{ asset.it_asset_number or "&mdash;" | safe }}</dd>
+        <dt class="col-sm-4 text-muted small">Asset #</dt>
+        <dd class="col-sm-8">{{ asset.asset_number or "&mdash;" | safe }}</dd>
+
+        <dt class="col-sm-4 text-muted small">IT Asset Tag</dt>
+        <dd class="col-sm-8">{{ asset.it_asset_tag or '&mdash;' | safe }}</dd>
 
         <dt class="col-sm-4 text-muted small">Legacy Asset Tag</dt>
         <dd class="col-sm-8">{{ asset.asset_tag or '&mdash;' | safe }}</dd>

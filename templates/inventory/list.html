@@ -105,6 +105,11 @@
                 <td class="text-muted small">{{ item.it_asset_tag or '&mdash;' | safe }}</td>
                 <td class="text-muted small">{{ item.serial_number or '&mdash;' | safe }}</td>
                 <td class="small">{{ item.category.name if item.category else '&mdash;' }}</td>
+                <td class="small">
+                  {% if item.make or item.model_name %}
+                    {{ item.make or '' }} {{ item.model_name or '' }}
+                  {% else %}&mdash;{% endif %}
+                </td>
                 <td class="small">{{ item.make or '&mdash;' }} {{ item.model_name or '&mdash;' }}</td>
                 <td>
                   <span class="fsi-badge fsi-status-badge-{{ item.status.value.lower() }}">
