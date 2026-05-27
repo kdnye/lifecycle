@@ -182,7 +182,6 @@ def scan_lookup():
     return jsonify({
         "found": True,
         "id": asset.id,
-        "asset_tag": asset.asset_tag,
         "asset_number": asset.asset_number,
         "it_asset_tag": asset.it_asset_tag,
         "serial_number": asset.serial_number,
@@ -196,7 +195,6 @@ def scan_lookup():
 def _asset_data_from_form(form) -> dict:
     return {
         "serial_number": form.get("serial_number", "").strip() or None,
-        "asset_tag": form.get("asset_tag", "").strip() or None,
         "asset_number": form.get("asset_number", "").strip() or None,
         "it_asset_tag": form.get("it_asset_tag", "").strip() or None,
         "ble_tag_id": form.get("ble_tag_id", "").strip() or None,
