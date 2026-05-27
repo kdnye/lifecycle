@@ -17,8 +17,9 @@
 </nav>
 
 <div class="d-md-none mb-3">
-  <a href="{{ url_for('inventory.list_assets') }}" class="text-decoration-none text-muted small fw-bold">
-    <i class="bi bi-arrow-left"></i> Back to Inventory
+  <a href="{% if asset %}{{ url_for('inventory.asset_detail', asset_id=asset.id) }}{% else %}{{ url_for('inventory.list_assets') }}{% endif %}"
+     class="text-decoration-none text-muted small fw-bold">
+    <i class="bi bi-arrow-left"></i> {% if asset %}Back to Asset #{{ asset.id }}{% else %}Back to Inventory{% endif %}
   </a>
 </div>
 
@@ -30,7 +31,7 @@
 
   <div class="fsi-card mb-4 fsi-scanner-widget" id="scanner-widget" data-field-id="it_asset_tag">
     <p class="small fw-semibold mb-3"><i class="bi bi-upc-scan"></i> Scan Asset Tag</p>
-    <div class="d-grid gap-2 d-md-block">
+    <div class="d-grid gap-2 d-md-flex">
       <button type="button" class="btn fsi-button-secondary" data-action="camera-scan">
         <i class="bi bi-qr-code-scan"></i> Scan Barcode / QR
       </button>
