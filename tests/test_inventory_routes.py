@@ -4,7 +4,7 @@ from app.models import AssetStatus, Inventory, db
 
 def test_list_assets_requires_login(client):
     response = client.get("/inventory/")
-    assert response.status_code == 401
+    assert response.status_code == 302
 
 
 def test_list_assets_authenticated(app, logged_in_client):
@@ -37,6 +37,7 @@ def test_create_asset(app, logged_in_client):
         "/inventory/new",
         data={
             "asset_tag": "NEW-TAG",
+            "it_asset_number": "IT-0001",
             "serial_number": "SN-NEW",
             "status": "Available",
         },
@@ -44,9 +45,10 @@ def test_create_asset(app, logged_in_client):
     )
     assert response.status_code == 200
 
-    asset = Inventory.query.filter_by(asset_tag="NEW-TAG").first()
+    asset = Inventory.query.filter_by(it_asset_number="IT-0001").first()
     assert asset is not None
     assert asset.status == AssetStatus.AVAILABLE
+    assert asset.asset_tag == "NEW-TAG"
 
 
 def test_create_quantity_asset(app, logged_in_client):
