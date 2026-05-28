@@ -4,6 +4,8 @@
 
   var SCAN_ENDPOINT = '/inventory/scan';
   var NEW_ASSET_PATH = '/inventory/new';
+  var PREFERRED_CAMERA_INDEX = 2;
+  var PREFERRED_ZOOM = 1.5;
 
   function getCsrfToken() {
     var meta = document.querySelector('meta[name="csrf-token"]');
@@ -65,7 +67,24 @@
   }
 
   function describeCamera(camera, index) {
-    return camera.label || ('Camera ' + (index + 1));
+    var suffix = index === PREFERRED_CAMERA_INDEX ? ' (preferred)' : '';
+
+    if (!camera.label) {
+      return 'Camera ' + index + suffix;
+    }
+
+    return camera.label + ' (camera ' + index + (index === PREFERRED_CAMERA_INDEX ? ', preferred' : '') + ')';
+  }
+
+  function getPreferredCameraIndex(cameras) {
+    if (!cameras || cameras.length === 0) {
+      return -1;
+    }
+    if (cameras.length > PREFERRED_CAMERA_INDEX) {
+      return PREFERRED_CAMERA_INDEX;
+    }
+
+    return cameras.length - 1;
   }
 
   function setCameraSelectState(select, cameras) {
@@ -76,7 +95,7 @@
 
     var fallbackOption = document.createElement('option');
     fallbackOption.value = '';
-    fallbackOption.textContent = 'Default rear camera';
+    fallbackOption.textContent = 'Browser default / camera 0';
     select.appendChild(fallbackOption);
 
     cameras.forEach(function (camera, index) {
@@ -93,25 +112,63 @@
           break;
         }
       }
+    } else {
+      var preferredIndex = getPreferredCameraIndex(cameras);
+      if (preferredIndex >= 0) {
+        select.value = cameras[preferredIndex].id;
+      }
     }
 
     select.disabled = cameras.length === 0;
   }
 
-  function emptyCameraListResult() {
-    return {
-      then: function (callback) {
-        if (typeof callback === 'function') callback([]);
-        return this;
-      },
-      'catch': function () {
-        return this;
-      }
-    };
+  function clampZoomToCapabilities(scanner, zoom) {
+    var capabilities = null;
+
+    if (!scanner || typeof scanner.getRunningTrackCapabilities !== 'function') {
+      return zoom;
+    }
+
+    try {
+      capabilities = scanner.getRunningTrackCapabilities();
+    } catch (err) {
+      return zoom;
+    }
+
+    if (!capabilities || !capabilities.zoom) {
+      return zoom;
+    }
+
+    if (typeof capabilities.zoom.min === 'number' && zoom < capabilities.zoom.min) {
+      zoom = capabilities.zoom.min;
+    }
+    if (typeof capabilities.zoom.max === 'number' && zoom > capabilities.zoom.max) {
+      zoom = capabilities.zoom.max;
+    }
+
+    return zoom;
+  }
+
+  function applyPreferredZoom(scanner) {
+    var zoom = clampZoomToCapabilities(scanner, PREFERRED_ZOOM);
+
+    if (!scanner || typeof scanner.applyVideoConstraints !== 'function') {
+      return null;
+    }
+
+    var zoomResult = scanner.applyVideoConstraints({
+      advanced: [{ zoom: zoom }]
+    });
+
+    if (zoomResult && typeof zoomResult.catch === 'function') {
+      return zoomResult.catch(function () {});
+    }
+
+    return zoomResult || null;
   }
 
   function populateCameraSelect(select, status) {
-    if (!select) return emptyCameraListResult();
+    if (!select) return Promise.resolve([]);
 
     if (!window.Html5Qrcode || typeof Html5Qrcode.getCameras !== 'function') {
       select.disabled = true;
@@ -119,7 +176,7 @@
         status.textContent = 'Camera selection is unavailable until the scanner library loads.';
         status.style.display = 'block';
       }
-      return emptyCameraListResult();
+      return Promise.resolve([]);
     }
 
     return Html5Qrcode.getCameras()
@@ -138,8 +195,9 @@
   }
 
   window.FsiScannerCameras = {
+    applyPreferredZoom: applyPreferredZoom,
     getCameraStartConfig: getCameraStartConfig,
-    populateCameraSelect: populateCameraSelect,
+    populateCameraSelect: populateCameraSelect
   };
 
   function fillTargetField(widget, value) {
@@ -189,7 +247,9 @@
           lookupTag(decodedText, widget);
         },
         null
-      ).catch(function (err) {
+      ).then(function () {
+        applyPreferredZoom(scanner);
+      }).catch(function (err) {
         scanning = false;
         btn.innerHTML = '<i class="bi bi-qr-code-scan"></i> Scan Barcode / QR';
         var status = widget.querySelector('[data-scanner-status]');

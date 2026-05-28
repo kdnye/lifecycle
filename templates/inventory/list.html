@@ -59,9 +59,9 @@
   <div class="mt-2" id="inventory-search-camera-controls" style="display:none;">
     <label for="inventory-search-camera-select" class="form-label small fw-semibold">Camera</label>
     <select id="inventory-search-camera-select" class="form-select form-select-sm" data-camera-select>
-      <option value="">Default rear camera</option>
+      <option value="">Browser default / camera 0</option>
     </select>
-    <div class="form-text">If the wrong lens opens, choose another camera and scan again.</div>
+    <div class="form-text">Defaults to device camera 2 (zero-based; third device option) with 1.5x zoom when supported.</div>
   </div>
   <div id="inventory-search-qr-reader" class="mt-2" style="display:none;"></div>
 </form>
@@ -288,6 +288,9 @@
           },
           function () {}
         ).then(function () {
+          if (window.FsiScannerCameras) {
+            window.FsiScannerCameras.applyPreferredZoom(scanner);
+          }
           scanning = true;
           transitioning = false;
         }).catch(function () {

@@ -10,9 +10,9 @@
       <div class="text-start mb-3">
         <label for="audit-camera-select" class="form-label small fw-semibold">Camera</label>
         <select id="audit-camera-select" class="form-select form-select-sm" data-camera-select>
-          <option value="">Default rear camera</option>
+          <option value="">Browser default / camera 0</option>
         </select>
-        <div class="form-text">If the scanner opens the wrong lens, choose another camera.</div>
+        <div class="form-text">Defaults to device camera 2 (zero-based; third device option) with 1.5x zoom when supported.</div>
       </div>
       <div id="reader" width="100%"></div>
       <p class="text-muted mt-3 mb-0" id="scan-status">Initializing camera...</p>
@@ -119,6 +119,9 @@ document.addEventListener("DOMContentLoaded", function() {
         statusText.innerText = "Starting camera...";
         return html5QrCode.start(cameraConfig, { fps: 10, qrbox: 250 }, onScanSuccess)
             .then(function () {
+                if (window.FsiScannerCameras) {
+                    window.FsiScannerCameras.applyPreferredZoom(html5QrCode);
+                }
                 scannerRunning = true;
                 statusText.innerText = "Ready to scan.";
             })
