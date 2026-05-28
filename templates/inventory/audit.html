@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Inventory Mode{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 col-md-6 offset-md-3">
+    <h1 class="fsi-display mb-4">Inventory Mode</h1>
+
+    <div id="scanner-container" class="fsi-card text-center mb-4">
+      <div id="reader" width="100%"></div>
+      <p class="text-muted mt-3 mb-0" id="scan-status">Initializing camera...</p>
+    </div>
+
+    <div id="action-container" class="fsi-card mb-4" style="display: none;">
+      <h4 class="text-danger mb-3"><i class="bi bi-exclamation-triangle"></i> Asset Not Found</h4>
+      <p>Barcode <strong id="scanned-fsi-display"></strong> is not in the system.</p>
+
+      <div class="d-grid gap-3 mt-4">
+        <button type="button" class="btn btn-outline-primary btn-lg" onclick="showLinkUi()">
+          Link to Current IT Asset Tag
+        </button>
+        <a id="btn-add-new" href="#" class="btn fsi-button-primary btn-lg">
+          Add New Inventory Asset
+        </a>
+        <a href="{{ url_for('inventory.audit_mode') }}" class="btn fsi-button-secondary btn-lg">
+          Cancel & Scan Again
+        </a>
+      </div>
+    </div>
+
+    <div id="link-form-container" class="fsi-card mb-4" style="display: none;">
+      <h5 class="mb-3">Link to IT Asset Tag</h5>
+      <form method="post" action="{{ url_for('inventory.link_fsi_to_it_tag') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="fsi_number" id="hidden-fsi-number" />
+
+        <div class="mb-3">
+          <label for="it_asset_tag" class="form-label">Target IT Asset Tag</label>
+          <input type="text" class="form-control form-control-lg" name="it_asset_tag" id="it_asset_tag" required autofocus>
+          <div class="form-text">Scan or type the existing IT Asset Tag to append the FSI number to it.</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn fsi-button-primary w-100">Link Asset</button>
+          <button type="button" class="btn fsi-button-secondary w-100" onclick="resetToActions()">Back</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const html5QrCode = new Html5Qrcode("reader");
+    const fsiRegex = /^FSI\d{4}$/i;
+
+    const scannerContainer = document.getElementById('scanner-container');
+    const actionContainer = document.getElementById('action-container');
+    const statusText = document.getElementById('scan-status');
+
+    function onScanSuccess(decodedText) {
+        const tag = decodedText.trim();
+        statusText.innerText = "Processing " + tag + "...";
+
+        html5QrCode.stop().then(() => {
+            fetch("{{ url_for('inventory.scan_lookup') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ tag: tag })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.found) {
+                    window.location.href = data.detail_url + "/edit";
+                } else {
+                    if (fsiRegex.test(tag)) {
+                        scannerContainer.style.display = 'none';
+                        actionContainer.style.display = 'block';
+
+                        document.getElementById('scanned-fsi-display').innerText = tag;
+                        document.getElementById('hidden-fsi-number').value = tag;
+
+                        document.getElementById('btn-add-new').href = "{{ url_for('inventory.new_asset_form') }}?asset_number=" + encodeURIComponent(tag);
+                    } else {
+                        alert("Scanned tag '" + tag + "' does not match FSI format. Reloading scanner.");
+                        window.location.reload();
+                    }
+                }
+            })
+            .catch(() => {
+                alert("Unable to look up the scanned tag. Reloading scanner.");
+                window.location.reload();
+            });
+        }).catch(err => console.error("Failed to stop scanner.", err));
+    }
+
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
+        .then(() => { statusText.innerText = "Ready to scan."; })
+        .catch(() => { statusText.innerText = "Camera unavailable. Check browser permissions and try again."; });
+});
+
+function showLinkUi() {
+    document.getElementById('action-container').style.display = 'none';
+    document.getElementById('link-form-container').style.display = 'block';
+    document.getElementById('it_asset_tag').focus();
+}
+
+function resetToActions() {
+    document.getElementById('link-form-container').style.display = 'none';
+    document.getElementById('action-container').style.display = 'block';
+}
+</script>
+{% endblock %}
