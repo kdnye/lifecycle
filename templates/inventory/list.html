@@ -7,7 +7,7 @@
       {% set is_selected = node.category.id == selected_id %}
       <li class="fsi-category-tree__item">
         {% if node.children %}
-          <details class="fsi-category-tree__branch" open>
+          <details class="fsi-category-tree__branch">
             <summary class="fsi-category-tree__summary">
               <span class="fsi-category-tree__chevron" aria-hidden="true"></span>
               <a href="{{ url_for('inventory.list_assets', category_id=node.category.id) }}"
