@@ -52,6 +52,82 @@
       });
   }
 
+
+  function getCameraSelect(widget) {
+    return widget ? widget.querySelector('[data-camera-select]') : null;
+  }
+
+  function getCameraStartConfig(select) {
+    if (select && select.value) {
+      return select.value;
+    }
+    return { facingMode: 'environment' };
+  }
+
+  function describeCamera(camera, index) {
+    return camera.label || ('Camera ' + (index + 1));
+  }
+
+  function setCameraSelectState(select, cameras) {
+    if (!select) return;
+
+    var currentValue = select.value;
+    select.innerHTML = '';
+
+    var fallbackOption = document.createElement('option');
+    fallbackOption.value = '';
+    fallbackOption.textContent = 'Default rear camera';
+    select.appendChild(fallbackOption);
+
+    cameras.forEach(function (camera, index) {
+      var option = document.createElement('option');
+      option.value = camera.id;
+      option.textContent = describeCamera(camera, index);
+      select.appendChild(option);
+    });
+
+    if (currentValue) {
+      var matchingOption = Array.prototype.find.call(select.options, function (option) {
+        return option.value === currentValue;
+      });
+      if (matchingOption) select.value = currentValue;
+    }
+
+    select.disabled = cameras.length === 0;
+  }
+
+  function populateCameraSelect(select, status) {
+    if (!select) return Promise.resolve([]);
+
+    if (!window.Html5Qrcode || typeof Html5Qrcode.getCameras !== 'function') {
+      select.disabled = true;
+      if (status) {
+        status.textContent = 'Camera selection is unavailable until the scanner library loads.';
+        status.style.display = 'block';
+      }
+      return Promise.resolve([]);
+    }
+
+    return Html5Qrcode.getCameras()
+      .then(function (cameras) {
+        setCameraSelectState(select, cameras || []);
+        return cameras || [];
+      })
+      .catch(function (err) {
+        select.disabled = true;
+        if (status) {
+          status.textContent = 'Unable to list cameras. Browser permission may be required: ' + (err && err.message ? err.message : err);
+          status.style.display = 'block';
+        }
+        return [];
+      });
+  }
+
+  window.FsiScannerCameras = {
+    getCameraStartConfig: getCameraStartConfig,
+    populateCameraSelect: populateCameraSelect,
+  };
+
   function fillTargetField(widget, value) {
     var fieldId = widget.dataset.fieldId || 'it_asset_tag';
     var input = document.getElementById(fieldId);
@@ -69,6 +145,10 @@
 
     var scanner = null;
     var scanning = false;
+    var cameraSelect = getCameraSelect(widget);
+    var status = widget.querySelector('[data-scanner-status]');
+
+    populateCameraSelect(cameraSelect, status);
 
     btn.addEventListener('click', function () {
       if (scanning) {
@@ -85,7 +165,7 @@
       scanning = true;
       btn.innerHTML = '<i class="bi bi-stop-circle"></i> Stop Scanner';
       scanner.start(
-        { facingMode: 'environment' },
+        getCameraStartConfig(cameraSelect),
         { fps: 10, qrbox: { width: 250, height: 250 } },
         function onScanSuccess(decodedText) {
           scanner.stop().catch(function () {});
