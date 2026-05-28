@@ -62,20 +62,20 @@
 <script src="{{ url_for('static', filename='js/asset_scanner.js') }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const html5QrCode = new Html5Qrcode("reader");
-    const fsiRegex = /^FSI\d{4}$/i;
+    var html5QrCode = new Html5Qrcode("reader");
+    var fsiRegex = /^FSI\d{4}$/i;
 
-    const scannerContainer = document.getElementById('scanner-container');
-    const actionContainer = document.getElementById('action-container');
-    const statusText = document.getElementById('scan-status');
-    const cameraSelect = document.getElementById('audit-camera-select');
-    let scannerRunning = false;
+    var scannerContainer = document.getElementById('scanner-container');
+    var actionContainer = document.getElementById('action-container');
+    var statusText = document.getElementById('scan-status');
+    var cameraSelect = document.getElementById('audit-camera-select');
+    var scannerRunning = false;
 
     function onScanSuccess(decodedText) {
-        const tag = decodedText.trim();
+        var tag = decodedText.trim();
         statusText.innerText = "Processing " + tag + "...";
 
-        html5QrCode.stop().then(() => {
+        html5QrCode.stop().then(function () {
             scannerRunning = false;
             fetch("{{ url_for('inventory.scan_lookup') }}", {
                 method: 'POST',
@@ -85,8 +85,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 },
                 body: JSON.stringify({ tag: tag })
             })
-            .then(res => res.json())
-            .then(data => {
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
                 if (data.found) {
                     window.location.href = data.detail_url + "/edit";
                 } else {
@@ -104,41 +104,46 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
             })
-            .catch(() => {
+            .catch(function () {
                 alert("Unable to look up the scanned tag. Reloading scanner.");
                 window.location.reload();
             });
-        }).catch(err => console.error("Failed to stop scanner.", err));
+        }).catch(function (err) { console.error("Failed to stop scanner.", err); });
     }
 
     function startScanner() {
-        const cameraConfig = window.FsiScannerCameras
+        var cameraConfig = window.FsiScannerCameras
             ? window.FsiScannerCameras.getCameraStartConfig(cameraSelect)
             : { facingMode: "environment" };
 
         statusText.innerText = "Starting camera...";
         return html5QrCode.start(cameraConfig, { fps: 10, qrbox: 250 }, onScanSuccess)
-            .then(() => {
+            .then(function () {
                 scannerRunning = true;
                 statusText.innerText = "Ready to scan.";
             })
-            .catch(() => {
+            .catch(function () {
                 scannerRunning = false;
                 statusText.innerText = "Camera unavailable. Check browser permissions and try again.";
             });
     }
 
     if (window.FsiScannerCameras) {
-        window.FsiScannerCameras.populateCameraSelect(cameraSelect, statusText).finally(startScanner);
+        window.FsiScannerCameras.populateCameraSelect(cameraSelect, statusText).then(startScanner);
     } else {
         startScanner();
     }
 
     if (cameraSelect) {
         cameraSelect.addEventListener('change', function () {
-            const restart = scannerRunning ? html5QrCode.stop().catch(function () {}) : Promise.resolve();
-            scannerRunning = false;
-            restart.finally(startScanner);
+            if (scannerRunning) {
+                scannerRunning = false;
+                html5QrCode.stop()
+                    .catch(function () {})
+                    .then(startScanner);
+            } else {
+                startScanner();
+            }
         });
     }
 });

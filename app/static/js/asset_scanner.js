@@ -87,17 +87,31 @@
     });
 
     if (currentValue) {
-      var matchingOption = Array.prototype.find.call(select.options, function (option) {
-        return option.value === currentValue;
-      });
-      if (matchingOption) select.value = currentValue;
+      for (var i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === currentValue) {
+          select.value = currentValue;
+          break;
+        }
+      }
     }
 
     select.disabled = cameras.length === 0;
   }
 
+  function emptyCameraListResult() {
+    return {
+      then: function (callback) {
+        if (typeof callback === 'function') callback([]);
+        return this;
+      },
+      'catch': function () {
+        return this;
+      }
+    };
+  }
+
   function populateCameraSelect(select, status) {
-    if (!select) return Promise.resolve([]);
+    if (!select) return emptyCameraListResult();
 
     if (!window.Html5Qrcode || typeof Html5Qrcode.getCameras !== 'function') {
       select.disabled = true;
@@ -105,7 +119,7 @@
         status.textContent = 'Camera selection is unavailable until the scanner library loads.';
         status.style.display = 'block';
       }
-      return Promise.resolve([]);
+      return emptyCameraListResult();
     }
 
     return Html5Qrcode.getCameras()

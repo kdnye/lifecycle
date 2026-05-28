@@ -233,8 +233,17 @@
       }
 
       function stopScanner() {
-        if (!scanner) return Promise.resolve();
+        if (!scanner) return null;
         return scanner.stop().catch(function () {});
+      }
+
+      function afterScannerStops(callback) {
+        var stopPromise = stopScanner();
+        if (stopPromise) {
+          stopPromise.then(callback);
+        } else {
+          callback();
+        }
       }
 
       scanBtn.addEventListener('click', function () {
@@ -242,7 +251,7 @@
 
         if (scanning && scanner) {
           transitioning = true;
-          stopScanner().finally(function () {
+          afterScannerStops(function () {
             scanning = false;
             transitioning = false;
             resetScannerUi();
@@ -270,7 +279,7 @@
             transitioning = true;
             searchInput.value = decodedText || '';
 
-            stopScanner().finally(function () {
+            afterScannerStops(function () {
               scanning = false;
               transitioning = false;
               resetScannerUi();
