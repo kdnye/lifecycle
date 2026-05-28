@@ -7,6 +7,13 @@
     <h1 class="fsi-display mb-4">Inventory Mode</h1>
 
     <div id="scanner-container" class="fsi-card text-center mb-4">
+      <div class="text-start mb-3">
+        <label for="audit-camera-select" class="form-label small fw-semibold">Camera</label>
+        <select id="audit-camera-select" class="form-select form-select-sm" data-camera-select>
+          <option value="">Camera 2 (preferred)</option>
+        </select>
+        <div class="form-text">Defaults to camera 2 with 1.5x zoom when supported; choose another camera if needed.</div>
+      </div>
       <div id="reader" width="100%"></div>
       <p class="text-muted mt-3 mb-0" id="scan-status">Initializing camera...</p>
     </div>
@@ -52,20 +59,24 @@
 
 {% block scripts %}
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/asset_scanner.js') }}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const html5QrCode = new Html5Qrcode("reader");
-    const fsiRegex = /^FSI\d{4}$/i;
+    var html5QrCode = new Html5Qrcode("reader");
+    var fsiRegex = /^FSI\d{4}$/i;
 
-    const scannerContainer = document.getElementById('scanner-container');
-    const actionContainer = document.getElementById('action-container');
-    const statusText = document.getElementById('scan-status');
+    var scannerContainer = document.getElementById('scanner-container');
+    var actionContainer = document.getElementById('action-container');
+    var statusText = document.getElementById('scan-status');
+    var cameraSelect = document.getElementById('audit-camera-select');
+    var scannerRunning = false;
 
     function onScanSuccess(decodedText) {
-        const tag = decodedText.trim();
+        var tag = decodedText.trim();
         statusText.innerText = "Processing " + tag + "...";
 
-        html5QrCode.stop().then(() => {
+        html5QrCode.stop().then(function () {
+            scannerRunning = false;
             fetch("{{ url_for('inventory.scan_lookup') }}", {
                 method: 'POST',
                 headers: {
@@ -74,8 +85,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 },
                 body: JSON.stringify({ tag: tag })
             })
-            .then(res => res.json())
-            .then(data => {
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
                 if (data.found) {
                     window.location.href = data.detail_url + "/edit";
                 } else {
@@ -93,16 +104,51 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
             })
-            .catch(() => {
+            .catch(function () {
                 alert("Unable to look up the scanned tag. Reloading scanner.");
                 window.location.reload();
             });
-        }).catch(err => console.error("Failed to stop scanner.", err));
+        }).catch(function (err) { console.error("Failed to stop scanner.", err); });
     }
 
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
-        .then(() => { statusText.innerText = "Ready to scan."; })
-        .catch(() => { statusText.innerText = "Camera unavailable. Check browser permissions and try again."; });
+    function startScanner() {
+        var cameraConfig = window.FsiScannerCameras
+            ? window.FsiScannerCameras.getCameraStartConfig(cameraSelect)
+            : { facingMode: "environment" };
+
+        statusText.innerText = "Starting camera...";
+        return html5QrCode.start(cameraConfig, { fps: 10, qrbox: 250 }, onScanSuccess)
+            .then(function () {
+                if (window.FsiScannerCameras) {
+                    window.FsiScannerCameras.applyPreferredZoom(html5QrCode);
+                }
+                scannerRunning = true;
+                statusText.innerText = "Ready to scan.";
+            })
+            .catch(function () {
+                scannerRunning = false;
+                statusText.innerText = "Camera unavailable. Check browser permissions and try again.";
+            });
+    }
+
+    if (window.FsiScannerCameras) {
+        window.FsiScannerCameras.populateCameraSelect(cameraSelect, statusText).then(startScanner);
+    } else {
+        startScanner();
+    }
+
+    if (cameraSelect) {
+        cameraSelect.addEventListener('change', function () {
+            if (scannerRunning) {
+                scannerRunning = false;
+                html5QrCode.stop()
+                    .catch(function () {})
+                    .then(startScanner);
+            } else {
+                startScanner();
+            }
+        });
+    }
 });
 
 function showLinkUi() {
