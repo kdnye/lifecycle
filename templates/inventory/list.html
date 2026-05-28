@@ -2,15 +2,30 @@
 {% block title %}Inventory{% endblock %}
 
 {% macro category_tree(nodes, selected_id) %}
-  <ul class="list-unstyled ps-2 mb-0">
+  <ul class="fsi-category-tree list-unstyled mb-0">
     {% for node in nodes %}
-      <li class="py-1">
-        <a href="{{ url_for('inventory.list_assets', category_id=node.category.id) }}"
-           class="text-decoration-none small {% if node.category.id == selected_id %}fw-bold text-primary{% endif %}">
-          {{ node.category.name }}
-        </a>
+      {% set is_selected = node.category.id == selected_id %}
+      <li class="fsi-category-tree__item">
         {% if node.children %}
-          {{ category_tree(node.children, selected_id) }}
+          <details class="fsi-category-tree__branch">
+            <summary class="fsi-category-tree__summary">
+              <span class="fsi-category-tree__chevron" aria-hidden="true"></span>
+              <a href="{{ url_for('inventory.list_assets', category_id=node.category.id) }}"
+                 class="fsi-category-tree__link {% if is_selected %}is-active{% endif %}"
+                 {% if is_selected %}aria-current="page"{% endif %}>
+                {{ node.category.name }}
+              </a>
+            </summary>
+            <div class="fsi-category-tree__children">
+              {{ category_tree(node.children, selected_id) }}
+            </div>
+          </details>
+        {% else %}
+          <a href="{{ url_for('inventory.list_assets', category_id=node.category.id) }}"
+             class="fsi-category-tree__link fsi-category-tree__link--leaf {% if is_selected %}is-active{% endif %}"
+             {% if is_selected %}aria-current="page"{% endif %}>
+            {{ node.category.name }}
+          </a>
         {% endif %}
       </li>
     {% endfor %}
@@ -177,6 +192,14 @@
   {{ super() }}
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
+    (function () {
+      document.querySelectorAll('.fsi-category-tree__summary .fsi-category-tree__link').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.stopPropagation();
+        });
+      });
+    })();
+
     (function () {
       var scanBtn = document.getElementById('inventory-search-scan-btn');
       var searchInput = document.getElementById('inventory-search-input');
