@@ -56,6 +56,13 @@
       <a href="{{ url_for('inventory.list_assets') }}" class="btn fsi-button-secondary">Clear</a>
     {% endif %}
   </div>
+  <div class="mt-2" id="inventory-search-camera-controls" style="display:none;">
+    <label for="inventory-search-camera-select" class="form-label small fw-semibold">Camera</label>
+    <select id="inventory-search-camera-select" class="form-select form-select-sm" data-camera-select>
+      <option value="">Default rear camera</option>
+    </select>
+    <div class="form-text">If the wrong lens opens, choose another camera and scan again.</div>
+  </div>
   <div id="inventory-search-qr-reader" class="mt-2" style="display:none;"></div>
 </form>
 
@@ -191,6 +198,7 @@
 {% block scripts %}
   {{ super() }}
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="{{ url_for('static', filename='js/asset_scanner.js') }}"></script>
   <script>
     (function () {
       document.querySelectorAll('.fsi-category-tree__summary .fsi-category-tree__link').forEach(function (link) {
@@ -205,7 +213,13 @@
       var searchInput = document.getElementById('inventory-search-input');
       var searchForm = document.getElementById('inventory-search-form');
       var readerContainer = document.getElementById('inventory-search-qr-reader');
+      var cameraControls = document.getElementById('inventory-search-camera-controls');
+      var cameraSelect = document.getElementById('inventory-search-camera-select');
       if (!scanBtn || !searchInput || !searchForm || !readerContainer) return;
+
+      if (window.FsiScannerCameras) {
+        window.FsiScannerCameras.populateCameraSelect(cameraSelect);
+      }
 
       var scanner = null;
       var scanning = false;
@@ -214,12 +228,22 @@
 
       function resetScannerUi() {
         readerContainer.style.display = 'none';
+        if (cameraControls) cameraControls.style.display = 'none';
         scanBtn.classList.remove('active');
       }
 
       function stopScanner() {
-        if (!scanner) return Promise.resolve();
+        if (!scanner) return null;
         return scanner.stop().catch(function () {});
+      }
+
+      function afterScannerStops(callback) {
+        var stopPromise = stopScanner();
+        if (stopPromise) {
+          stopPromise.then(callback);
+        } else {
+          callback();
+        }
       }
 
       scanBtn.addEventListener('click', function () {
@@ -227,7 +251,7 @@
 
         if (scanning && scanner) {
           transitioning = true;
-          stopScanner().finally(function () {
+          afterScannerStops(function () {
             scanning = false;
             transitioning = false;
             resetScannerUi();
@@ -241,12 +265,13 @@
         }
 
         readerContainer.style.display = 'block';
+        if (cameraControls) cameraControls.style.display = 'block';
         scanner = new Html5Qrcode(readerId);
         transitioning = true;
         scanBtn.classList.add('active');
 
         scanner.start(
-          { facingMode: 'environment' },
+          window.FsiScannerCameras ? window.FsiScannerCameras.getCameraStartConfig(cameraSelect) : { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           function (decodedText) {
             if (transitioning) return;
@@ -254,7 +279,7 @@
             transitioning = true;
             searchInput.value = decodedText || '';
 
-            stopScanner().finally(function () {
+            afterScannerStops(function () {
               scanning = false;
               transitioning = false;
               resetScannerUi();
