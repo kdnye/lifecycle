@@ -10,7 +10,7 @@ from flask import (
 )
 
 from app.auth_utils import login_required
-from app.models import AssetStatus, AssetTrackingMode
+from app.models import AssetStatus, AssetTrackingMode, db
 from app.services import inventory_service
 from app.services.asset_storage import delete_asset_photo, upload_asset_photo
 
@@ -173,6 +173,44 @@ def create_category():
     inventory_service.create_category(name, parent_id)
     flash(f"Category '{name}' created.", "success")
     return redirect(url_for("inventory.list_categories"))
+
+
+@inventory_bp.get("/audit")
+@login_required
+def audit_mode():
+    """Renders the single-scan Inventory Mode."""
+    return render_template("inventory/audit.html")
+
+
+@inventory_bp.post("/audit/link")
+@login_required
+def link_fsi_to_it_tag():
+    """Form submission to link a scanned FSI number to an existing IT Tag."""
+    fsi_number = request.form.get("fsi_number", "").strip()
+    it_asset_tag = request.form.get("it_asset_tag", "").strip()
+
+    if not fsi_number or not it_asset_tag:
+        flash("Both FSI Number and IT Asset Tag are required.", "danger")
+        return redirect(url_for("inventory.audit_mode"))
+
+    existing_fsi_asset = inventory_service.get_asset_by_tag(fsi_number)
+    if existing_fsi_asset:
+        flash(f"FSI Number '{fsi_number}' is already linked to another asset.", "danger")
+        return redirect(url_for("inventory.audit_mode"))
+
+    asset = inventory_service.get_asset_by_tag(it_asset_tag)
+    if not asset:
+        flash(f"IT Asset Tag '{it_asset_tag}' not found.", "danger")
+        return redirect(url_for("inventory.audit_mode"))
+
+    try:
+        inventory_service.update_asset(asset, {"asset_number": fsi_number})
+        flash(f"Linked {fsi_number} to existing asset.", "success")
+        return redirect(url_for("inventory.edit_asset_form", asset_id=asset.id))
+    except Exception as exc:
+        db.session.rollback()
+        flash(str(exc), "danger")
+        return redirect(url_for("inventory.audit_mode"))
 
 
 @inventory_bp.post("/scan")

@@ -9,7 +9,7 @@ def test_list_assets_requires_login(client):
 
 def test_list_assets_authenticated(app, logged_in_client):
     client, user = logged_in_client
-    asset = Inventory(asset_tag="TAG-001", status=AssetStatus.AVAILABLE)
+    asset = Inventory(asset_number="TAG-001", status=AssetStatus.AVAILABLE)
     db.session.add(asset)
     db.session.commit()
 
@@ -20,7 +20,7 @@ def test_list_assets_authenticated(app, logged_in_client):
 
 def test_asset_detail(app, logged_in_client):
     client, user = logged_in_client
-    asset = Inventory(asset_tag="TAG-002", make="Dell", status=AssetStatus.AVAILABLE)
+    asset = Inventory(asset_number="TAG-002", make="Dell", status=AssetStatus.AVAILABLE)
     db.session.add(asset)
     db.session.commit()
     asset_id = asset.id
@@ -36,8 +36,8 @@ def test_create_asset(app, logged_in_client):
     response = client.post(
         "/inventory/new",
         data={
-            "asset_tag": "NEW-TAG",
-            "it_asset_number": "IT-0001",
+            "asset_number": "NEW-TAG",
+            "it_asset_tag": "IT-0001",
             "serial_number": "SN-NEW",
             "status": "Available",
         },
@@ -45,10 +45,10 @@ def test_create_asset(app, logged_in_client):
     )
     assert response.status_code == 200
 
-    asset = Inventory.query.filter_by(it_asset_number="IT-0001").first()
+    asset = Inventory.query.filter_by(it_asset_tag="IT-0001").first()
     assert asset is not None
     assert asset.status == AssetStatus.AVAILABLE
-    assert asset.asset_tag == "NEW-TAG"
+    assert asset.asset_number == "NEW-TAG"
 
 
 def test_create_quantity_asset(app, logged_in_client):
@@ -89,7 +89,7 @@ def test_scan_lookup_not_found(app, logged_in_client):
 
 def test_scan_lookup_found(app, logged_in_client):
     client, user = logged_in_client
-    asset = Inventory(asset_tag="SCAN-TAG", status=AssetStatus.AVAILABLE)
+    asset = Inventory(asset_number="SCAN-TAG", status=AssetStatus.AVAILABLE)
     db.session.add(asset)
     db.session.commit()
 
@@ -105,9 +105,80 @@ def test_scan_lookup_found(app, logged_in_client):
     assert "detail_url" in data
 
 
+def test_audit_mode_renders(app, logged_in_client):
+    client, user = logged_in_client
+
+    response = client.get("/inventory/audit")
+
+    assert response.status_code == 200
+    assert b"Inventory Mode" in response.data
+    assert b"Link to Current IT Asset Tag" in response.data
+
+
+def test_link_fsi_to_it_tag_updates_existing_asset(app, logged_in_client):
+    client, user = logged_in_client
+    asset = Inventory(it_asset_tag="IT-7788", status=AssetStatus.AVAILABLE)
+    db.session.add(asset)
+    db.session.commit()
+    asset_id = asset.id
+
+    response = client.post(
+        "/inventory/audit/link",
+        data={"fsi_number": "FSI7788", "it_asset_tag": "IT-7788"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/inventory/{asset_id}/edit")
+    updated = db.session.get(Inventory, asset_id)
+    assert updated.asset_number == "FSI7788"
+
+
+def test_link_fsi_to_it_tag_redirects_when_target_missing(app, logged_in_client):
+    client, user = logged_in_client
+
+    response = client.post(
+        "/inventory/audit/link",
+        data={"fsi_number": "FSI9999", "it_asset_tag": "UNKNOWN"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/inventory/audit")
+
+
+def test_link_fsi_to_it_tag_requires_both_inputs(app, logged_in_client):
+    client, user = logged_in_client
+
+    response = client.post(
+        "/inventory/audit/link",
+        data={"fsi_number": "", "it_asset_tag": ""},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/inventory/audit")
+
+
+def test_link_fsi_to_it_tag_rejects_existing_fsi_number(app, logged_in_client):
+    client, user = logged_in_client
+    existing_fsi_asset = Inventory(asset_number="FSI7788", status=AssetStatus.AVAILABLE)
+    target_asset = Inventory(it_asset_tag="IT-7788", status=AssetStatus.AVAILABLE)
+    db.session.add_all([existing_fsi_asset, target_asset])
+    db.session.commit()
+    target_asset_id = target_asset.id
+
+    response = client.post(
+        "/inventory/audit/link",
+        data={"fsi_number": "FSI7788", "it_asset_tag": "IT-7788"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/inventory/audit")
+    updated_target = db.session.get(Inventory, target_asset_id)
+    assert updated_target.asset_number is None
+
+
 def test_archive_asset(app, logged_in_client):
     client, user = logged_in_client
-    asset = Inventory(asset_tag="ARCH-TAG", status=AssetStatus.AVAILABLE)
+    asset = Inventory(asset_number="ARCH-TAG", status=AssetStatus.AVAILABLE)
     db.session.add(asset)
     db.session.commit()
     asset_id = asset.id

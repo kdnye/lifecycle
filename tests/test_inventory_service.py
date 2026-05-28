@@ -5,8 +5,8 @@ from app.services import inventory_service
 
 def test_create_and_retrieve_asset(app):
     asset = inventory_service.create_asset({
-        "asset_tag": "SVC-001",
-        "it_asset_number": "IT-SVC-001",
+        "asset_number": "SVC-001",
+        "it_asset_tag": "IT-SVC-001",
         "make": "Apple",
         "model_name": "MacBook Pro",
         "status": "Available",
@@ -15,16 +15,16 @@ def test_create_and_retrieve_asset(app):
 
     retrieved = inventory_service.get_asset_by_id(asset.id)
     assert retrieved is not None
-    assert retrieved.asset_tag == "SVC-001"
-    assert retrieved.it_asset_number == "IT-SVC-001"
+    assert retrieved.asset_number == "SVC-001"
+    assert retrieved.it_asset_tag == "IT-SVC-001"
     assert retrieved.make == "Apple"
     assert retrieved.status == AssetStatus.AVAILABLE
 
 
 def test_get_asset_by_tag_searches_all_tag_fields(app):
     a1 = Inventory(serial_number="SER-AAA", status=AssetStatus.AVAILABLE)
-    a2 = Inventory(asset_tag="TAG-BBB", status=AssetStatus.AVAILABLE)
-    a4 = Inventory(it_asset_number="IT-444", status=AssetStatus.AVAILABLE)
+    a2 = Inventory(asset_number="TAG-BBB", status=AssetStatus.AVAILABLE)
+    a4 = Inventory(it_asset_tag="IT-444", status=AssetStatus.AVAILABLE)
     a3 = Inventory(ble_tag_id="BLE-CCC", status=AssetStatus.AVAILABLE)
     db.session.add_all([a1, a2, a3, a4])
     db.session.commit()
@@ -38,7 +38,7 @@ def test_get_asset_by_tag_searches_all_tag_fields(app):
 
 def test_retire_asset_clears_assignment(app):
     asset = Inventory(
-        asset_tag="RET-001",
+        asset_number="RET-001",
         status=AssetStatus.ASSIGNED,
         assigned_to_user_id=999,
     )
@@ -82,7 +82,7 @@ def test_create_quantity_tracked_asset(app):
 def test_serialized_asset_rejects_quantity_above_one(app):
     with pytest.raises(ValueError):
         inventory_service.create_asset({
-            "asset_tag": "SER-100",
+            "asset_number": "SER-100",
             "tracking_mode": "Serialized",
             "quantity": 4,
             "status": "Available",
