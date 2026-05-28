@@ -167,20 +167,8 @@
     return zoomResult || null;
   }
 
-  function emptyCameraListResult() {
-    return {
-      then: function (callback) {
-        if (typeof callback === 'function') callback([]);
-        return this;
-      },
-      'catch': function () {
-        return this;
-      }
-    };
-  }
-
   function populateCameraSelect(select, status) {
-    if (!select) return emptyCameraListResult();
+    if (!select) return Promise.resolve([]);
 
     if (!window.Html5Qrcode || typeof Html5Qrcode.getCameras !== 'function') {
       select.disabled = true;
@@ -188,7 +176,7 @@
         status.textContent = 'Camera selection is unavailable until the scanner library loads.';
         status.style.display = 'block';
       }
-      return emptyCameraListResult();
+      return Promise.resolve([]);
     }
 
     return Html5Qrcode.getCameras()
