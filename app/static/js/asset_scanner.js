@@ -4,7 +4,7 @@
 
   var SCAN_ENDPOINT = '/inventory/scan';
   var NEW_ASSET_PATH = '/inventory/new';
-  var DEFAULT_CAMERA_INDEX = 1;
+  var PREFERRED_CAMERA_INDEX = 2;
   var PREFERRED_ZOOM = 1.5;
 
   function getCsrfToken() {
@@ -67,7 +67,24 @@
   }
 
   function describeCamera(camera, index) {
-    return camera.label || ('Camera ' + (index + 1));
+    var suffix = index === PREFERRED_CAMERA_INDEX ? ' (preferred)' : '';
+
+    if (!camera.label) {
+      return 'Camera ' + index + suffix;
+    }
+
+    return camera.label + ' (camera ' + index + (index === PREFERRED_CAMERA_INDEX ? ', preferred' : '') + ')';
+  }
+
+  function getPreferredCameraIndex(cameras) {
+    if (!cameras || cameras.length === 0) {
+      return -1;
+    }
+    if (cameras.length > PREFERRED_CAMERA_INDEX) {
+      return PREFERRED_CAMERA_INDEX;
+    }
+
+    return cameras.length - 1;
   }
 
   function setCameraSelectState(select, cameras) {
@@ -78,7 +95,7 @@
 
     var fallbackOption = document.createElement('option');
     fallbackOption.value = '';
-    fallbackOption.textContent = 'Camera 2 (preferred)';
+    fallbackOption.textContent = 'Browser default / camera 0';
     select.appendChild(fallbackOption);
 
     cameras.forEach(function (camera, index) {
@@ -95,10 +112,11 @@
           break;
         }
       }
-    } else if (cameras.length > DEFAULT_CAMERA_INDEX) {
-      select.value = cameras[DEFAULT_CAMERA_INDEX].id;
-    } else if (cameras.length === 1) {
-      select.value = cameras[0].id;
+    } else {
+      var preferredIndex = getPreferredCameraIndex(cameras);
+      if (preferredIndex >= 0) {
+        select.value = cameras[preferredIndex].id;
+      }
     }
 
     select.disabled = cameras.length === 0;
