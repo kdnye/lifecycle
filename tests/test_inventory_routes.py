@@ -145,6 +145,37 @@ def test_link_fsi_to_it_tag_redirects_when_target_missing(app, logged_in_client)
     assert response.headers["Location"].endswith("/inventory/audit")
 
 
+def test_link_fsi_to_it_tag_requires_both_inputs(app, logged_in_client):
+    client, user = logged_in_client
+
+    response = client.post(
+        "/inventory/audit/link",
+        data={"fsi_number": "", "it_asset_tag": ""},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/inventory/audit")
+
+
+def test_link_fsi_to_it_tag_rejects_existing_fsi_number(app, logged_in_client):
+    client, user = logged_in_client
+    existing_fsi_asset = Inventory(asset_number="FSI7788", status=AssetStatus.AVAILABLE)
+    target_asset = Inventory(it_asset_tag="IT-7788", status=AssetStatus.AVAILABLE)
+    db.session.add_all([existing_fsi_asset, target_asset])
+    db.session.commit()
+    target_asset_id = target_asset.id
+
+    response = client.post(
+        "/inventory/audit/link",
+        data={"fsi_number": "FSI7788", "it_asset_tag": "IT-7788"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/inventory/audit")
+    updated_target = db.session.get(Inventory, target_asset_id)
+    assert updated_target.asset_number is None
+
+
 def test_archive_asset(app, logged_in_client):
     client, user = logged_in_client
     asset = Inventory(asset_number="ARCH-TAG", status=AssetStatus.AVAILABLE)

@@ -198,15 +198,4 @@
 {% block scripts %}
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="{{ url_for('static', filename='js/asset_scanner.js') }}"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('asset_number')) {
-        const assetInput = document.getElementById('asset_number');
-        if (assetInput) {
-            assetInput.value = urlParams.get('asset_number');
-        }
-    }
-});
-</script>
 {% endblock %}
