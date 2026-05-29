@@ -2,9 +2,16 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
-from app.models import AssetCategory, AssetStatus, AssetTrackingMode, Inventory, User, db
+from app.models import (
+    AssetCategory,
+    AssetStatus,
+    AssetTrackingMode,
+    Inventory,
+    User,
+    db,
+)
 
 
 def _validate_tracking_data(data: dict) -> None:
@@ -57,11 +64,20 @@ def list_assets(
     category_id: Optional[int] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    sort_by: str = "id",
+    sort_dir: str = "desc",
     page: int = 1,
     per_page: int = 25,
 ):
-    """Return paginated inventory. category_id filter includes all subcategories."""
+    """Return paginated inventory with filters and safe column sorting.
+
+    category_id includes all subcategories. assigned_to searches employee
+    identity fields so managers can find all equipment assigned to a person.
+    """
     query = Inventory.query
+    joined_category = False
+    joined_user = False
 
     if category_id is not None:
         ids = _get_category_subtree_ids(category_id)
@@ -74,7 +90,7 @@ def list_assets(
             pass
 
     if search:
-        term = f"%{search}%"
+        term = f"%{search.strip()}%"
         query = query.filter(
             or_(
                 Inventory.asset_number.ilike(term),
@@ -87,20 +103,72 @@ def list_assets(
             )
         )
 
-    return query.order_by(Inventory.id.desc()).paginate(
+    if assigned_to:
+        assigned_to = assigned_to.strip()
+        if assigned_to.lower() in {"unassigned", "none", "null", "-", "—"}:
+            query = query.filter(Inventory.assigned_to_user_id.is_(None))
+        elif assigned_to:
+            term = f"%{assigned_to}%"
+            query = query.join(Inventory.assigned_to)
+            joined_user = True
+            query = query.filter(
+                or_(
+                    User.name.ilike(term),
+                    User.first_name.ilike(term),
+                    User.last_name.ilike(term),
+                    User.email.ilike(term),
+                )
+            )
+
+    sort_key = (sort_by or "id").strip().lower()
+    direction = (sort_dir or "desc").strip().lower()
+    if direction not in {"asc", "desc"}:
+        direction = "desc"
+
+    if sort_key == "category" and not joined_category:
+        query = query.outerjoin(Inventory.category)
+        joined_category = True
+    if sort_key == "assigned_to" and not joined_user:
+        query = query.outerjoin(Inventory.assigned_to)
+        joined_user = True
+
+    assigned_display_name = func.coalesce(
+        User.name,
+        User.first_name,
+        User.last_name,
+        User.email,
+        "",
+    )
+    sort_columns = {
+        "asset_number": [Inventory.asset_number, Inventory.id],
+        "it_asset_tag": [Inventory.it_asset_tag, Inventory.id],
+        "serial_number": [Inventory.serial_number, Inventory.id],
+        "category": [AssetCategory.name, Inventory.id],
+        "make_model": [Inventory.make, Inventory.model_name, Inventory.id],
+        "status": [Inventory.status, Inventory.id],
+        "assigned_to": [assigned_display_name, Inventory.id],
+        "id": [Inventory.id],
+    }
+    columns = sort_columns.get(sort_key, sort_columns["id"])
+    order_by = [
+        column.asc() if direction == "asc" else column.desc() for column in columns
+    ]
+
+    return query.order_by(*order_by).paginate(
         page=page, per_page=per_page, error_out=False
     )
-
 
 
 def list_assignable_users() -> list[User]:
     """Return active users for assignment dropdown."""
     return (
-        User.query
-        .filter(User.is_active.is_(True))
-        .order_by(User.name.asc(), User.first_name.asc(), User.last_name.asc(), User.id.asc())
+        User.query.filter(User.is_active.is_(True))
+        .order_by(
+            User.name.asc(), User.first_name.asc(), User.last_name.asc(), User.id.asc()
+        )
         .all()
     )
+
 
 def create_asset(data: dict) -> Inventory:
     _validate_tracking_data(data)
@@ -142,10 +210,20 @@ def update_asset(asset: Inventory, data: dict) -> Inventory:
     }
     _validate_tracking_data(merged)
     field_map = [
-        "serial_number", "asset_number", "it_asset_tag", "ble_tag_id",
-        "category_id", "make", "model_name",
-        "assigned_to_user_id", "photo_url", "location", "notes",
-        "purchase_date", "purchase_price", "warranty_expiry",
+        "serial_number",
+        "asset_number",
+        "it_asset_tag",
+        "ble_tag_id",
+        "category_id",
+        "make",
+        "model_name",
+        "assigned_to_user_id",
+        "photo_url",
+        "location",
+        "notes",
+        "purchase_date",
+        "purchase_price",
+        "warranty_expiry",
     ]
     for field in field_map:
         if field in data:
@@ -222,9 +300,7 @@ def list_categories_hierarchical(active_only: bool = True) -> list[dict]:
     return flattened
 
 
-def create_category(
-    name: str, parent_id: Optional[int] = None
-) -> AssetCategory:
+def create_category(name: str, parent_id: Optional[int] = None) -> AssetCategory:
     cat = AssetCategory(name=name, parent_category_id=parent_id)
     db.session.add(cat)
     db.session.commit()

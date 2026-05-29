@@ -14,7 +14,6 @@ from app.models import AssetStatus, AssetTrackingMode, db
 from app.services import inventory_service
 from app.services.asset_storage import delete_asset_photo, upload_asset_photo
 
-
 inventory_bp = Blueprint("inventory", __name__)
 
 
@@ -24,11 +23,17 @@ def list_assets():
     category_id = request.args.get("category_id", type=int)
     status = request.args.get("status")
     search = request.args.get("q")
+    assigned_to_search = request.args.get("assigned_to")
+    sort_by = request.args.get("sort_by", "id")
+    sort_dir = request.args.get("sort_dir", "desc")
     page = request.args.get("page", 1, type=int)
     pagination = inventory_service.list_assets(
         category_id=category_id,
         status=status,
         search=search,
+        assigned_to=assigned_to_search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
         page=page,
         per_page=25,
     )
@@ -41,6 +46,9 @@ def list_assets():
         selected_category_id=category_id,
         selected_status=status,
         search=search,
+        assigned_to_search=assigned_to_search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
         AssetStatus=AssetStatus,
     )
 
@@ -195,7 +203,9 @@ def link_fsi_to_it_tag():
 
     existing_fsi_asset = inventory_service.get_asset_by_tag(fsi_number)
     if existing_fsi_asset:
-        flash(f"FSI Number '{fsi_number}' is already linked to another asset.", "danger")
+        flash(
+            f"FSI Number '{fsi_number}' is already linked to another asset.", "danger"
+        )
         return redirect(url_for("inventory.audit_mode"))
 
     asset = inventory_service.get_asset_by_tag(it_asset_tag)
@@ -223,17 +233,22 @@ def scan_lookup():
     asset = inventory_service.get_asset_by_tag(tag)
     if asset is None:
         return jsonify({"found": False, "tag": tag}), 200
-    return jsonify({
-        "found": True,
-        "id": asset.id,
-        "asset_number": asset.asset_number,
-        "it_asset_tag": asset.it_asset_tag,
-        "serial_number": asset.serial_number,
-        "make": asset.make,
-        "model_name": asset.model_name,
-        "status": asset.status.value,
-        "detail_url": url_for("inventory.asset_detail", asset_id=asset.id),
-    }), 200
+    return (
+        jsonify(
+            {
+                "found": True,
+                "id": asset.id,
+                "asset_number": asset.asset_number,
+                "it_asset_tag": asset.it_asset_tag,
+                "serial_number": asset.serial_number,
+                "make": asset.make,
+                "model_name": asset.model_name,
+                "status": asset.status.value,
+                "detail_url": url_for("inventory.asset_detail", asset_id=asset.id),
+            }
+        ),
+        200,
+    )
 
 
 def _asset_data_from_form(form) -> dict:
