@@ -4,13 +4,15 @@ from app.services import inventory_service
 
 
 def test_create_and_retrieve_asset(app):
-    asset = inventory_service.create_asset({
-        "asset_number": "SVC-001",
-        "it_asset_tag": "IT-SVC-001",
-        "make": "Apple",
-        "model_name": "MacBook Pro",
-        "status": "Available",
-    })
+    asset = inventory_service.create_asset(
+        {
+            "asset_number": "SVC-001",
+            "it_asset_tag": "IT-SVC-001",
+            "make": "Apple",
+            "model_name": "MacBook Pro",
+            "status": "Available",
+        }
+    )
     assert asset.id is not None
 
     retrieved = inventory_service.get_asset_by_id(asset.id)
@@ -68,22 +70,88 @@ def test_category_tree_structure(app):
 
 
 def test_create_quantity_tracked_asset(app):
-    asset = inventory_service.create_asset({
-        "make": "Logitech",
-        "model_name": "Wireless Mouse",
-        "tracking_mode": "Quantity",
-        "quantity": 25,
-        "status": "Available",
-    })
+    asset = inventory_service.create_asset(
+        {
+            "make": "Logitech",
+            "model_name": "Wireless Mouse",
+            "tracking_mode": "Quantity",
+            "quantity": 25,
+            "status": "Available",
+        }
+    )
     assert asset.tracking_mode.value == "Quantity"
     assert asset.quantity == 25
 
 
 def test_serialized_asset_rejects_quantity_above_one(app):
     with pytest.raises(ValueError):
-        inventory_service.create_asset({
-            "asset_number": "SER-100",
-            "tracking_mode": "Serialized",
-            "quantity": 4,
-            "status": "Available",
-        })
+        inventory_service.create_asset(
+            {
+                "asset_number": "SER-100",
+                "tracking_mode": "Serialized",
+                "quantity": 4,
+                "status": "Available",
+            }
+        )
+
+
+def test_list_assets_filters_by_assigned_to_employee(app, create_user):
+    alex = create_user(email="alex@example.com", name="Alex Driver")
+    blair = create_user(email="blair@example.com", name="Blair Manager")
+    alex_laptop = Inventory(
+        asset_number="ALEX-LAPTOP",
+        status=AssetStatus.ASSIGNED,
+        assigned_to_user_id=alex.id,
+    )
+    blair_laptop = Inventory(
+        asset_number="BLAIR-LAPTOP",
+        status=AssetStatus.ASSIGNED,
+        assigned_to_user_id=blair.id,
+    )
+    db.session.add_all([alex_laptop, blair_laptop])
+    db.session.commit()
+
+    pagination = inventory_service.list_assets(assigned_to="Alex")
+
+    assert [asset.asset_number for asset in pagination.items] == ["ALEX-LAPTOP"]
+
+
+def test_list_assets_sorts_by_assigned_to(app, create_user):
+    alex = create_user(email="sort-alex@example.com", name="Alex Driver")
+    blair = create_user(email="sort-blair@example.com", name="Blair Manager")
+    db.session.add_all(
+        [
+            Inventory(
+                asset_number="BLAIR-LAPTOP",
+                status=AssetStatus.ASSIGNED,
+                assigned_to_user_id=blair.id,
+            ),
+            Inventory(
+                asset_number="ALEX-LAPTOP",
+                status=AssetStatus.ASSIGNED,
+                assigned_to_user_id=alex.id,
+            ),
+        ]
+    )
+    db.session.commit()
+
+    pagination = inventory_service.list_assets(sort_by="assigned_to", sort_dir="asc")
+
+    assert [asset.asset_number for asset in pagination.items] == [
+        "ALEX-LAPTOP",
+        "BLAIR-LAPTOP",
+    ]
+
+
+def test_list_assets_sorts_by_header_column(app):
+    db.session.add_all(
+        [
+            Inventory(asset_number="TAG-200", status=AssetStatus.AVAILABLE),
+            Inventory(asset_number="TAG-100", status=AssetStatus.AVAILABLE),
+        ]
+    )
+    db.session.commit()
+
+    pagination = inventory_service.list_assets(sort_by="asset_number", sort_dir="asc")
+
+    assert [asset.asset_number for asset in pagination.items] == ["TAG-100", "TAG-200"]

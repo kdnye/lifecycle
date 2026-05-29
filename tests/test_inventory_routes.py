@@ -191,3 +191,26 @@ def test_archive_asset(app, logged_in_client):
 
     updated = db.session.get(Inventory, asset_id)
     assert updated.status == AssetStatus.RETIRED
+
+
+def test_list_assets_renders_sortable_headers_and_assigned_to_search(
+    app, logged_in_client
+):
+    client, user = logged_in_client
+    asset = Inventory(
+        asset_number="ASSIGNED-TAG",
+        status=AssetStatus.ASSIGNED,
+        assigned_to_user_id=user.id,
+    )
+    db.session.add(asset)
+    db.session.commit()
+
+    response = client.get(
+        "/inventory/?assigned_to=Test&sort_by=assigned_to&sort_dir=asc"
+    )
+
+    assert response.status_code == 200
+    assert b'name="assigned_to"' in response.data
+    assert b'value="Test"' in response.data
+    assert b"sort_by=asset_number" in response.data
+    assert b"ASSIGNED-TAG" in response.data
