@@ -109,7 +109,7 @@ def list_assets(
             query = query.filter(Inventory.assigned_to_user_id.is_(None))
         elif assigned_to:
             term = f"%{assigned_to}%"
-            query = query.outerjoin(Inventory.assigned_to)
+            query = query.join(Inventory.assigned_to)
             joined_user = True
             query = query.filter(
                 or_(
