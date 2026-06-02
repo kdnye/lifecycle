@@ -16,3 +16,13 @@ def test_ble_inventory_contract_matches_dashboard_ingestion_strings():
     assert AssetTrackingMode.SERIALIZED.value == "Serialized"
     assert AssetStatus.ASSIGNED.value == "Assigned"
     assert AssetStatus.AVAILABLE.value == "Available"
+
+    tracking_mode_column = Inventory.__table__.c.tracking_mode
+    status_column = Inventory.__table__.c.status
+
+    assert "Serialized" in tracking_mode_column.type.enums
+    assert "SERIALIZED" not in tracking_mode_column.type.enums
+    assert "Assigned" in status_column.type.enums
+    assert "Available" in status_column.type.enums
+    assert "ASSIGNED" not in status_column.type.enums
+    assert "AVAILABLE" not in status_column.type.enums
