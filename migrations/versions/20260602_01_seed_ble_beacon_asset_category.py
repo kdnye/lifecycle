@@ -4,6 +4,8 @@ Revision ID: 20260602_01
 Revises: 20260527_02
 Create Date: 2026-06-02
 """
+from datetime import datetime
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -19,6 +21,7 @@ asset_categories = sa.table(
     sa.column("name", sa.String),
     sa.column("parent_category_id", sa.Integer),
     sa.column("is_active", sa.Boolean),
+    sa.column("created_at", sa.DateTime),
 )
 
 
@@ -38,6 +41,7 @@ def upgrade() -> None:
                     "name": "BLE Beacon",
                     "parent_category_id": None,
                     "is_active": True,
+                    "created_at": datetime.utcnow(),
                 }
             ],
         )
