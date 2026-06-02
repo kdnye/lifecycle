@@ -69,6 +69,11 @@ class AssetTrackingMode(str, enum.Enum):
     QUANTITY = "Quantity"
 
 
+def _enum_values(enum_cls):
+    """Persist enum values instead of member names for cross-app DB compatibility."""
+    return [item.value for item in enum_cls]
+
+
 class User(db.Model):
     """Mapped representation of the central FSI users table."""
 
@@ -295,7 +300,7 @@ class Inventory(db.Model):
         db.Enum(
             AssetTrackingMode,
             name="asset_tracking_mode",
-            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            values_callable=_enum_values,
             validate_strings=True,
         ),
         nullable=False,
@@ -307,7 +312,7 @@ class Inventory(db.Model):
         db.Enum(
             AssetStatus,
             name="asset_status",
-            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+            values_callable=_enum_values,
             validate_strings=True,
         ),
         nullable=False,
