@@ -54,6 +54,10 @@ def test_category_seeds_create_hierarchy():
         vehicles = AssetCategory.query.filter_by(name="Vehicles", parent_category_id=None).first()
         assert vehicles is not None
 
+        ble_beacon = AssetCategory.query.filter_by(name="BLE Beacon", parent_category_id=None).first()
+        assert ble_beacon is not None
+        assert ble_beacon.is_active is True
+
         # Verify children are correctly linked
         laptops = AssetCategory.query.filter_by(name="Laptops").first()
         assert laptops is not None
@@ -67,9 +71,9 @@ def test_category_seeds_create_hierarchy():
         assert pallet_jacks is not None
         assert pallet_jacks.parent_category_id == vehicles.id
 
-        # Verify total count: 6 top-level + 8 children = 14
-        assert AssetCategory.query.count() == 14
+        # Verify total count: 7 top-level + 8 children = 15
+        assert AssetCategory.query.count() == 15
 
         # Seeding again is idempotent
         seed_baseline_policy_rows()
-        assert AssetCategory.query.count() == 14
+        assert AssetCategory.query.count() == 15

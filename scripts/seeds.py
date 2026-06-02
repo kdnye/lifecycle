@@ -147,6 +147,7 @@ CATEGORY_SEEDS: list[tuple[str, str | None]] = [
     ("Office Furniture", None),
     ("Printing", None),
     ("Vehicles", None),
+    ("BLE Beacon", None),
     ("Laptops", "Computers"),
     ("Desktops", "Computers"),
     ("Keyboards", "Peripherals"),
