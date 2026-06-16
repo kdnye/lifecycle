@@ -14,6 +14,20 @@ from app.models import (
 )
 
 
+def _normalize_ble_tag_id(value: Optional[str]) -> Optional[str]:
+    """Canonicalize a BLE tag ID to uppercase alphanumeric (strip separators).
+
+    The smart-trucks edge emitter and the motive-dashboard BLE worker both reduce
+    MAC addresses to this form, and the dashboard joins detections to
+    ``inventory.ble_tag_id``. Normalizing on write guarantees a colon-formatted MAC
+    typed by Ops/HR (e.g. ``E4:5F:01:AA:BB:CC``) matches the detection key.
+    """
+    if not value:
+        return None
+    normalized = "".join(ch for ch in str(value) if ch.isalnum()).upper()
+    return normalized or None
+
+
 def _validate_tracking_data(data: dict) -> None:
     tracking_mode = data.get("tracking_mode", AssetTrackingMode.SERIALIZED.value)
     mode_enum = AssetTrackingMode(tracking_mode)
@@ -34,14 +48,18 @@ def get_asset_by_tag(tag_value: str) -> Optional[Inventory]:
     """Search asset_number, it_asset_tag, serial_number, and ble_tag_id fields."""
     if not tag_value:
         return None
-    return Inventory.query.filter(
-        or_(
-            Inventory.asset_number == tag_value,
-            Inventory.it_asset_tag == tag_value,
-            Inventory.serial_number == tag_value,
-            Inventory.ble_tag_id == tag_value,
-        )
-    ).first()
+    ble_tag_id = _normalize_ble_tag_id(tag_value)
+    clauses = [
+        Inventory.asset_number == tag_value,
+        Inventory.it_asset_tag == tag_value,
+        Inventory.serial_number == tag_value,
+        # Match the raw value too, so legacy rows whose ble_tag_id predates
+        # normalization (e.g. stored with colons) remain searchable.
+        Inventory.ble_tag_id == tag_value,
+    ]
+    if ble_tag_id and ble_tag_id != tag_value:
+        clauses.append(Inventory.ble_tag_id == ble_tag_id)
+    return Inventory.query.filter(or_(*clauses)).first()
 
 
 def _get_category_subtree_ids(root_id: int) -> list[int]:
@@ -176,7 +194,7 @@ def create_asset(data: dict) -> Inventory:
         serial_number=data.get("serial_number") or None,
         asset_number=data.get("asset_number") or None,
         it_asset_tag=data.get("it_asset_tag") or None,
-        ble_tag_id=data.get("ble_tag_id") or None,
+        ble_tag_id=_normalize_ble_tag_id(data.get("ble_tag_id")),
         category_id=data.get("category_id") or None,
         make=data.get("make") or None,
         model_name=data.get("model_name") or None,
@@ -227,7 +245,10 @@ def update_asset(asset: Inventory, data: dict) -> Inventory:
     ]
     for field in field_map:
         if field in data:
-            setattr(asset, field, data[field] or None)
+            if field == "ble_tag_id":
+                setattr(asset, field, _normalize_ble_tag_id(data[field]))
+            else:
+                setattr(asset, field, data[field] or None)
     if "tracking_mode" in data:
         asset.tracking_mode = AssetTrackingMode(data["tracking_mode"])
     if "quantity" in data:
