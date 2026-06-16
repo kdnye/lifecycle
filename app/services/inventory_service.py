@@ -53,8 +53,11 @@ def get_asset_by_tag(tag_value: str) -> Optional[Inventory]:
         Inventory.asset_number == tag_value,
         Inventory.it_asset_tag == tag_value,
         Inventory.serial_number == tag_value,
+        # Match the raw value too, so legacy rows whose ble_tag_id predates
+        # normalization (e.g. stored with colons) remain searchable.
+        Inventory.ble_tag_id == tag_value,
     ]
-    if ble_tag_id:
+    if ble_tag_id and ble_tag_id != tag_value:
         clauses.append(Inventory.ble_tag_id == ble_tag_id)
     return Inventory.query.filter(or_(*clauses)).first()
 
