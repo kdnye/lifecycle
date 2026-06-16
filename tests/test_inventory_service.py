@@ -27,7 +27,8 @@ def test_get_asset_by_tag_searches_all_tag_fields(app):
     a1 = Inventory(serial_number="SER-AAA", status=AssetStatus.AVAILABLE)
     a2 = Inventory(asset_number="TAG-BBB", status=AssetStatus.AVAILABLE)
     a4 = Inventory(it_asset_tag="IT-444", status=AssetStatus.AVAILABLE)
-    a3 = Inventory(ble_tag_id="BLE-CCC", status=AssetStatus.AVAILABLE)
+    # BLE tag IDs are stored normalized (uppercase alphanumeric).
+    a3 = Inventory(ble_tag_id="BLECCC", status=AssetStatus.AVAILABLE)
     db.session.add_all([a1, a2, a3, a4])
     db.session.commit()
 
@@ -36,6 +37,27 @@ def test_get_asset_by_tag_searches_all_tag_fields(app):
     assert inventory_service.get_asset_by_tag("BLE-CCC") is not None
     assert inventory_service.get_asset_by_tag("IT-444") is not None
     assert inventory_service.get_asset_by_tag("NOTFOUND") is None
+
+
+def test_ble_tag_id_normalized_on_create_and_lookup(app):
+    """A colon-formatted MAC is stored normalized and resolves either way."""
+    asset = inventory_service.create_asset(
+        {
+            "asset_number": "BLE-BEACON-1",
+            "ble_tag_id": "E4:5F:01:AA:BB:CC",
+            "status": "Available",
+        }
+    )
+    # Stored canonical form: uppercase, separators stripped.
+    assert asset.ble_tag_id == "E45F01AABBCC"
+
+    # Lookup resolves both the colon form and the normalized form.
+    assert inventory_service.get_asset_by_tag("E4:5F:01:AA:BB:CC").id == asset.id
+    assert inventory_service.get_asset_by_tag("e45f01aabbcc").id == asset.id
+
+    # Update with a differently formatted MAC re-normalizes.
+    inventory_service.update_asset(asset, {"ble_tag_id": "11-22-33-44-55-66"})
+    assert asset.ble_tag_id == "112233445566"
 
 
 def test_retire_asset_clears_assignment(app):
