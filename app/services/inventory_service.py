@@ -78,21 +78,15 @@ def _get_category_subtree_ids(root_id: int) -> list[int]:
     return result
 
 
-def list_assets(
+def _build_asset_query(
     category_id: Optional[int] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
     assigned_to: Optional[str] = None,
     sort_by: str = "id",
     sort_dir: str = "desc",
-    page: int = 1,
-    per_page: int = 25,
 ):
-    """Return paginated inventory with filters and safe column sorting.
-
-    category_id includes all subcategories. assigned_to searches employee
-    identity fields so managers can find all equipment assigned to a person.
-    """
+    """Build the filtered+ordered inventory query shared by list and export."""
     query = Inventory.query
     joined_category = False
     joined_user = False
@@ -172,9 +166,56 @@ def list_assets(
         column.asc() if direction == "asc" else column.desc() for column in columns
     ]
 
-    return query.order_by(*order_by).paginate(
-        page=page, per_page=per_page, error_out=False
+    return query.order_by(*order_by)
+
+
+def list_assets(
+    category_id: Optional[int] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    sort_by: str = "id",
+    sort_dir: str = "desc",
+    page: int = 1,
+    per_page: int = 25,
+):
+    """Return paginated inventory with filters and safe column sorting.
+
+    category_id includes all subcategories. assigned_to searches employee
+    identity fields so managers can find all equipment assigned to a person.
+    """
+    return _build_asset_query(
+        category_id=category_id,
+        status=status,
+        search=search,
+        assigned_to=assigned_to,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    ).paginate(page=page, per_page=per_page, error_out=False)
+
+
+def iter_assets_for_export(
+    category_id: Optional[int] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    sort_by: str = "id",
+    sort_dir: str = "desc",
+):
+    """Yield inventory rows matching the same filters as list_assets.
+
+    Uses ``yield_per`` so large inventories stream without loading every row
+    into memory at once.
+    """
+    query = _build_asset_query(
+        category_id=category_id,
+        status=status,
+        search=search,
+        assigned_to=assigned_to,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
+    return query.yield_per(200)
 
 
 def list_assignable_users() -> list[User]:

@@ -193,6 +193,51 @@ def test_archive_asset(app, logged_in_client):
     assert updated.status == AssetStatus.RETIRED
 
 
+def test_export_assets_csv_requires_login(client):
+    response = client.get("/inventory/export.csv")
+    assert response.status_code == 302
+
+
+def test_export_assets_csv_returns_rows(app, logged_in_client):
+    client, user = logged_in_client
+    db.session.add_all(
+        [
+            Inventory(asset_number="EXP-001", status=AssetStatus.AVAILABLE),
+            Inventory(asset_number="EXP-002", status=AssetStatus.ASSIGNED),
+        ]
+    )
+    db.session.commit()
+
+    response = client.get("/inventory/export.csv")
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/csv"
+    assert "attachment" in response.headers["Content-Disposition"]
+    assert "inventory-" in response.headers["Content-Disposition"]
+    body = response.get_data(as_text=True)
+    assert "asset_number" in body.splitlines()[0]
+    assert "EXP-001" in body
+    assert "EXP-002" in body
+
+
+def test_export_assets_csv_applies_filters(app, logged_in_client):
+    client, user = logged_in_client
+    db.session.add_all(
+        [
+            Inventory(asset_number="EXP-AVAIL", status=AssetStatus.AVAILABLE),
+            Inventory(asset_number="EXP-ASSIGN", status=AssetStatus.ASSIGNED),
+        ]
+    )
+    db.session.commit()
+
+    response = client.get("/inventory/export.csv?status=Available")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "EXP-AVAIL" in body
+    assert "EXP-ASSIGN" not in body
+
+
 def test_list_assets_renders_sortable_headers_and_assigned_to_search(
     app, logged_in_client
 ):
