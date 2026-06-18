@@ -1,11 +1,17 @@
+import csv
+import io
+from datetime import datetime, timezone
+
 from flask import (
     Blueprint,
+    Response,
     abort,
     flash,
     jsonify,
     redirect,
     render_template,
     request,
+    stream_with_context,
     url_for,
 )
 
@@ -15,6 +21,73 @@ from app.services import inventory_service
 from app.services.asset_storage import delete_asset_photo, upload_asset_photo
 
 inventory_bp = Blueprint("inventory", __name__)
+
+_EXPORT_COLUMNS = [
+    "id",
+    "asset_number",
+    "it_asset_tag",
+    "serial_number",
+    "ble_tag_id",
+    "category",
+    "make",
+    "model_name",
+    "tracking_mode",
+    "quantity",
+    "status",
+    "assigned_to_name",
+    "assigned_to_email",
+    "location",
+    "purchase_date",
+    "purchase_price",
+    "warranty_expiry",
+    "notes",
+    "created_at",
+    "updated_at",
+]
+
+
+def _asset_to_row(asset) -> list:
+    category_name = ""
+    if asset.category is not None:
+        parent = asset.category.parent
+        category_name = (
+            f"{parent.name}: {asset.category.name}" if parent else asset.category.name
+        )
+    assigned_name = ""
+    assigned_email = ""
+    if asset.assigned_to is not None:
+        assigned_name = (
+            asset.assigned_to.name
+            or " ".join(
+                part
+                for part in [asset.assigned_to.first_name, asset.assigned_to.last_name]
+                if part
+            )
+            or ""
+        )
+        assigned_email = asset.assigned_to.email or ""
+    return [
+        asset.id,
+        asset.asset_number or "",
+        asset.it_asset_tag or "",
+        asset.serial_number or "",
+        asset.ble_tag_id or "",
+        category_name,
+        asset.make or "",
+        asset.model_name or "",
+        asset.tracking_mode.value if asset.tracking_mode else "",
+        asset.quantity if asset.quantity is not None else "",
+        asset.status.value if asset.status else "",
+        assigned_name,
+        assigned_email,
+        asset.location or "",
+        asset.purchase_date.isoformat() if asset.purchase_date else "",
+        f"{asset.purchase_price:.2f}" if asset.purchase_price is not None else "",
+        asset.warranty_expiry.isoformat() if asset.warranty_expiry else "",
+        asset.notes or "",
+        asset.created_at.isoformat() if asset.created_at else "",
+        asset.updated_at.isoformat() if asset.updated_at else "",
+    ]
 
 
 @inventory_bp.get("/")
@@ -50,6 +123,46 @@ def list_assets():
         sort_by=sort_by,
         sort_dir=sort_dir,
         AssetStatus=AssetStatus,
+    )
+
+
+@inventory_bp.get("/export.csv")
+@login_required
+def export_assets_csv():
+    category_id = request.args.get("category_id", type=int)
+    status = request.args.get("status")
+    search = request.args.get("q")
+    assigned_to_search = request.args.get("assigned_to")
+    sort_by = request.args.get("sort_by", "id")
+    sort_dir = request.args.get("sort_dir", "desc")
+
+    assets = inventory_service.iter_assets_for_export(
+        category_id=category_id,
+        status=status,
+        search=search,
+        assigned_to=assigned_to_search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    )
+
+    def generate():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(_EXPORT_COLUMNS)
+        yield buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate(0)
+        for asset in assets:
+            writer.writerow(_asset_to_row(asset))
+            yield buffer.getvalue()
+            buffer.seek(0)
+            buffer.truncate(0)
+
+    filename = f"inventory-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.csv"
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

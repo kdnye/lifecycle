@@ -56,9 +56,22 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="fsi-display mb-0">Inventory</h1>
-  <a href="{{ url_for('inventory.new_asset_form') }}" class="btn fsi-button-primary">
-    <i class="bi bi-plus-lg"></i> Add Asset
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('inventory.export_assets_csv',
+                         category_id=selected_category_id,
+                         status=selected_status,
+                         q=search,
+                         assigned_to=assigned_to_search,
+                         sort_by=sort_by,
+                         sort_dir=sort_dir) }}"
+       class="btn fsi-button-secondary"
+       title="Download current filter as CSV">
+      <i class="bi bi-download"></i> Export CSV
+    </a>
+    <a href="{{ url_for('inventory.new_asset_form') }}" class="btn fsi-button-primary">
+      <i class="bi bi-plus-lg"></i> Add Asset
+    </a>
+  </div>
 </div>
 
 <!-- Search -->
