@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import csv
+import io
+from datetime import date
+from decimal import Decimal, InvalidOperation
 from typing import Optional
 
 from sqlalchemy import func, or_
@@ -377,3 +381,225 @@ def deactivate_category(category: AssetCategory) -> AssetCategory:
     category.is_active = False
     db.session.commit()
     return category
+
+
+# --- CSV import -------------------------------------------------------------
+
+# Columns the importer will write to. `id` is the match key, not a target.
+# `created_at`/`updated_at`/`photo_url` are intentionally excluded — timestamps
+# are managed by the ORM and photos live in GCS.
+_IMPORTABLE_COLUMNS = {
+    "asset_number",
+    "it_asset_tag",
+    "serial_number",
+    "ble_tag_id",
+    "category",
+    "make",
+    "model_name",
+    "tracking_mode",
+    "quantity",
+    "status",
+    "assigned_to_email",
+    "location",
+    "purchase_date",
+    "purchase_price",
+    "warranty_expiry",
+    "notes",
+}
+
+
+def _parse_int(value: str) -> Optional[int]:
+    value = value.strip()
+    if not value:
+        return None
+    return int(value)
+
+
+def _parse_decimal(value: str) -> Optional[Decimal]:
+    value = value.strip()
+    if not value:
+        return None
+    try:
+        return Decimal(value)
+    except InvalidOperation as exc:
+        raise ValueError(f"Invalid decimal '{value}'") from exc
+
+
+def _parse_date(value: str) -> Optional[date]:
+    value = value.strip()
+    if not value:
+        return None
+    # Tolerate full ISO datetimes (the export writes plain YYYY-MM-DD, but a
+    # user might paste a timestamp from elsewhere).
+    return date.fromisoformat(value[:10])
+
+
+def _resolve_category(value: str, cache: dict) -> Optional[int]:
+    """Resolve a 'Parent: Child' or 'Name' string to a category id.
+
+    Empty value clears the category. Unknown names raise ValueError.
+    """
+    value = value.strip()
+    if not value:
+        return None
+    if value in cache:
+        return cache[value]
+
+    if ":" in value:
+        parent_name, child_name = (part.strip() for part in value.split(":", 1))
+        category = (
+            AssetCategory.query.filter(AssetCategory.name == child_name)
+            .filter(AssetCategory.parent.has(name=parent_name))
+            .first()
+        )
+    else:
+        category = AssetCategory.query.filter(AssetCategory.name == value).first()
+
+    if category is None:
+        raise ValueError(f"Unknown category '{value}'")
+    cache[value] = category.id
+    return category.id
+
+
+def _resolve_assigned_user(value: str, cache: dict) -> Optional[int]:
+    """Resolve an email to a user id. Empty clears assignment."""
+    value = value.strip()
+    if not value:
+        return None
+    if value in cache:
+        return cache[value]
+    user = User.query.filter(func.lower(User.email) == value.lower()).first()
+    if user is None:
+        raise ValueError(f"Unknown assigned_to_email '{value}'")
+    cache[value] = user.id
+    return user.id
+
+
+def _apply_csv_row_to_asset(
+    asset: Inventory,
+    row: dict,
+    columns: set,
+    category_cache: dict,
+    user_cache: dict,
+) -> None:
+    """Mutate ``asset`` in place with values from a parsed CSV row."""
+    # Resolve string fields first so failures abort before any mutation.
+    pending: dict = {}
+
+    for field in (
+        "asset_number",
+        "it_asset_tag",
+        "serial_number",
+        "make",
+        "model_name",
+        "location",
+        "notes",
+    ):
+        if field in columns:
+            pending[field] = row.get(field, "").strip() or None
+
+    if "ble_tag_id" in columns:
+        pending["ble_tag_id"] = _normalize_ble_tag_id(row.get("ble_tag_id", ""))
+
+    if "tracking_mode" in columns:
+        raw = row.get("tracking_mode", "").strip()
+        pending["tracking_mode"] = (
+            AssetTrackingMode(raw) if raw else AssetTrackingMode.SERIALIZED
+        )
+
+    if "quantity" in columns:
+        quantity = _parse_int(row.get("quantity", ""))
+        pending["quantity"] = quantity if quantity is not None else 1
+
+    if "status" in columns:
+        raw = row.get("status", "").strip()
+        pending["status"] = AssetStatus(raw) if raw else AssetStatus.AVAILABLE
+
+    if "purchase_date" in columns:
+        pending["purchase_date"] = _parse_date(row.get("purchase_date", ""))
+    if "warranty_expiry" in columns:
+        pending["warranty_expiry"] = _parse_date(row.get("warranty_expiry", ""))
+    if "purchase_price" in columns:
+        pending["purchase_price"] = _parse_decimal(row.get("purchase_price", ""))
+
+    if "category" in columns:
+        pending["category_id"] = _resolve_category(
+            row.get("category", ""), category_cache
+        )
+    if "assigned_to_email" in columns:
+        pending["assigned_to_user_id"] = _resolve_assigned_user(
+            row.get("assigned_to_email", ""), user_cache
+        )
+
+    # Validate the tracking_mode/quantity combo using the resolved values.
+    mode = pending.get("tracking_mode", asset.tracking_mode)
+    quantity = pending.get("quantity", asset.quantity)
+    if quantity is None or quantity < 1:
+        raise ValueError("Quantity must be at least 1.")
+    if mode == AssetTrackingMode.SERIALIZED and quantity != 1:
+        raise ValueError("Serialized assets must have quantity set to 1.")
+
+    for field, value in pending.items():
+        setattr(asset, field, value)
+
+
+def update_assets_from_csv(file_stream) -> dict:
+    """Apply updates from an uploaded inventory CSV.
+
+    Matches rows by the ``id`` column. Only columns present in the CSV header
+    are written — a blank cell clears that field, an absent column is left
+    untouched. The whole import runs in one transaction: if any row fails
+    validation the session is rolled back so the user can fix and retry.
+    """
+    text = file_stream.read()
+    if isinstance(text, bytes):
+        text = text.decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(text))
+
+    fieldnames = reader.fieldnames or []
+    if "id" not in fieldnames:
+        raise ValueError("CSV is missing required 'id' column.")
+    writable = {name for name in fieldnames if name in _IMPORTABLE_COLUMNS}
+
+    updated = 0
+    skipped = 0
+    errors: list[str] = []
+    category_cache: dict = {}
+    user_cache: dict = {}
+
+    try:
+        for line_no, row in enumerate(reader, start=2):  # 1 is the header
+            raw_id = (row.get("id") or "").strip()
+            if not raw_id:
+                skipped += 1
+                continue
+            try:
+                asset_id = int(raw_id)
+            except ValueError:
+                errors.append(f"Row {line_no}: invalid id '{raw_id}'")
+                continue
+
+            asset = db.session.get(Inventory, asset_id)
+            if asset is None:
+                errors.append(f"Row {line_no}: no asset with id={asset_id}")
+                continue
+
+            try:
+                _apply_csv_row_to_asset(
+                    asset, row, writable, category_cache, user_cache
+                )
+            except ValueError as exc:
+                errors.append(f"Row {line_no}: {exc}")
+                continue
+            updated += 1
+
+        if errors:
+            db.session.rollback()
+            return {"updated": 0, "skipped": skipped, "errors": errors}
+
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return {"updated": updated, "skipped": skipped, "errors": errors}

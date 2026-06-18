@@ -166,6 +166,44 @@ def export_assets_csv():
     )
 
 
+@inventory_bp.get("/import")
+@login_required
+def import_assets_form():
+    return render_template("inventory/import.html", result=None)
+
+
+@inventory_bp.post("/import")
+@login_required
+def import_assets_csv():
+    file = request.files.get("csv_file")
+    if not file or not file.filename:
+        flash("Select a CSV file to upload.", "warning")
+        return redirect(url_for("inventory.import_assets_form"))
+    if not file.filename.lower().endswith(".csv"):
+        flash("File must have a .csv extension.", "warning")
+        return redirect(url_for("inventory.import_assets_form"))
+
+    try:
+        result = inventory_service.update_assets_from_csv(file.stream)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("inventory.import_assets_form"))
+
+    if result["errors"]:
+        flash(
+            f"Import aborted: {len(result['errors'])} row(s) had errors. "
+            "Fix the file and re-upload.",
+            "danger",
+        )
+    else:
+        msg = f"Updated {result['updated']} asset(s)."
+        if result["skipped"]:
+            msg += f" Skipped {result['skipped']} row(s) without an id."
+        flash(msg, "success")
+
+    return render_template("inventory/import.html", result=result)
+
+
 @inventory_bp.get("/new")
 @login_required
 def new_asset_form():

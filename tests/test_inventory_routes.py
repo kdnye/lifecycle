@@ -1,3 +1,5 @@
+import io
+
 import pytest
 from app.models import AssetStatus, Inventory, db
 
@@ -236,6 +238,96 @@ def test_export_assets_csv_applies_filters(app, logged_in_client):
     body = response.get_data(as_text=True)
     assert "EXP-AVAIL" in body
     assert "EXP-ASSIGN" not in body
+
+
+def test_import_form_requires_login(client):
+    response = client.get("/inventory/import")
+    assert response.status_code == 302
+
+
+def test_import_csv_updates_existing_asset(app, logged_in_client):
+    client, user = logged_in_client
+    asset = Inventory(asset_number="OLD-001", notes="old", status=AssetStatus.AVAILABLE)
+    db.session.add(asset)
+    db.session.commit()
+    asset_id = asset.id
+
+    csv_body = f"id,notes\n{asset_id},updated via import\n"
+    response = client.post(
+        "/inventory/import",
+        data={"csv_file": (io.BytesIO(csv_body.encode("utf-8")), "fix.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert b"Updated <strong>1</strong>" in response.data
+    db.session.expire_all()
+    refreshed = db.session.get(Inventory, asset_id)
+    assert refreshed.notes == "updated via import"
+    assert refreshed.asset_number == "OLD-001"  # not in CSV → preserved
+
+
+def test_import_csv_rolls_back_on_validation_error(app, logged_in_client):
+    client, user = logged_in_client
+    asset = Inventory(asset_number="KEEP", status=AssetStatus.AVAILABLE)
+    db.session.add(asset)
+    db.session.commit()
+    asset_id = asset.id
+
+    csv_body = f"id,status\n{asset_id},Available\n{asset_id + 999},Available\n"
+    response = client.post(
+        "/inventory/import",
+        data={"csv_file": (io.BytesIO(csv_body.encode("utf-8")), "bad.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert b"Import aborted" in response.data
+    db.session.expire_all()
+    refreshed = db.session.get(Inventory, asset_id)
+    # First row would have set status=Available (no change), but the failing
+    # second row should have rolled back the whole transaction. Confirm asset
+    # is otherwise untouched.
+    assert refreshed.asset_number == "KEEP"
+
+
+def test_import_csv_blank_cell_clears_field(app, logged_in_client):
+    client, user = logged_in_client
+    asset = Inventory(
+        asset_number="TAG-CLR",
+        location="Warehouse A",
+        status=AssetStatus.AVAILABLE,
+    )
+    db.session.add(asset)
+    db.session.commit()
+    asset_id = asset.id
+
+    csv_body = f"id,location\n{asset_id},\n"
+    response = client.post(
+        "/inventory/import",
+        data={"csv_file": (io.BytesIO(csv_body.encode("utf-8")), "clr.csv")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    db.session.expire_all()
+    refreshed = db.session.get(Inventory, asset_id)
+    assert refreshed.location is None
+
+
+def test_import_csv_rejects_missing_id_column(app, logged_in_client):
+    client, user = logged_in_client
+
+    csv_body = "asset_number,notes\nFOO,bar\n"
+    response = client.post(
+        "/inventory/import",
+        data={"csv_file": (io.BytesIO(csv_body.encode("utf-8")), "noid.csv")},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"missing required &#39;id&#39; column" in response.data
 
 
 def test_list_assets_renders_sortable_headers_and_assigned_to_search(
