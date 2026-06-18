@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import (
     Blueprint,
@@ -158,7 +158,7 @@ def export_assets_csv():
             buffer.seek(0)
             buffer.truncate(0)
 
-    filename = f"inventory-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.csv"
+    filename = f"inventory-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.csv"
     return Response(
         stream_with_context(generate()),
         mimetype="text/csv",

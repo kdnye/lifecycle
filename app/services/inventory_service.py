@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 
 from app.models import (
     AssetCategory,
@@ -214,6 +215,9 @@ def iter_assets_for_export(
         assigned_to=assigned_to,
         sort_by=sort_by,
         sort_dir=sort_dir,
+    ).options(
+        joinedload(Inventory.category).joinedload(AssetCategory.parent),
+        joinedload(Inventory.assigned_to),
     )
     return query.yield_per(200)
 
