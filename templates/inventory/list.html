@@ -68,6 +68,11 @@
        title="Download current filter as CSV">
       <i class="bi bi-download"></i> Export CSV
     </a>
+    <a href="{{ url_for('inventory.import_assets_form') }}"
+       class="btn fsi-button-secondary"
+       title="Upload a corrected CSV to bulk-update assets">
+      <i class="bi bi-upload"></i> Import CSV
+    </a>
     <a href="{{ url_for('inventory.new_asset_form') }}" class="btn fsi-button-primary">
       <i class="bi bi-plus-lg"></i> Add Asset
     </a>
